@@ -1,0 +1,168 @@
+@media (max-width: 1180px) {
+  .app-header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .header-tools {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .top-navigation {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .app-body {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+
+  .home-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .statistics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  :root {
+    --header-height: 64px;
+  }
+
+  .mobile-only {
+    display: inline-grid;
+  }
+
+  .app-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+
+    min-height: 64px;
+
+    padding: 8px 10px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+
+    font-size: 21px;
+  }
+
+  .brand-copy small {
+    display: none;
+  }
+
+  .header-tools {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .top-navigation {
+    position: fixed;
+    z-index: 1100;
+
+    top: 64px;
+    left: 8px;
+    right: 8px;
+
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+
+    max-height: calc(100vh - 80px);
+
+    padding: 9px;
+
+    overflow-y: auto;
+
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+
+    background: rgba(8, 7, 11, 0.98);
+
+    box-shadow: var(--shadow-purple);
+  }
+
+  .top-navigation.is-open {
+    display: flex;
+  }
+
+  .nav-button {
+    width: 100%;
+    text-align: left;
+  }
+
+  .app-body {
+    display: block;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    z-index: 1050;
+
+    top: 64px;
+    bottom: 0;
+    left: 0;
+
+    width: min(82vw, 310px);
+    height: auto;
+
+    transform: translateX(-105%);
+
+    border-right: 1px solid var(--color-border);
+
+    transition: transform var(--transition-normal);
+
+    box-shadow: 18px 0 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .app-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .app-main {
+    padding: 15px 11px;
+  }
+
+  .home-grid,
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prompt-dock {
+    bottom: 8px;
+
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .prompt-dock .primary-button {
+    grid-column: 1 / -1;
+  }
+
+  .hero-panel h1 {
+    font-size: 35px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-copy strong {
+    max-width: 180px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .panel-inner {
+    padding: 16px;
+  }
+
+  .hero-panel h1 {
+    font-size: 30px;
+  }
+}

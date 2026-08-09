@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#08070B"
+  >
+
+  <meta
+    name="description"
+    content="2Y AI Prompt Encyclopedia — 可無限擴充的服飾與 AI 生圖提示詞百科。"
+  >
+
+  <title>
+    2Y的服飾百科｜2Y AI Prompt Encyclopedia
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/tokens.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/base.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/layout.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/components.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./assets/css/responsive.css"
+  >
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- ========================================
+         固定頂部
+    ========================================= -->
+    <header class="app-header">
+
+      <div class="brand">
+        <div
+          class="brand-mark"
+          aria-hidden="true"
+        >
+          🍮
+        </div>
+
+        <div class="brand-copy">
+          <strong data-app-name-zh>
+            2Y的服飾百科
+          </strong>
+
+          <small>
+            2Y AI PROMPT ENCYCLOPEDIA
+          </small>
+        </div>
+      </div>
+
+      <nav
+        id="topNavigation"
+        class="top-navigation"
+        aria-label="主要功能導覽"
+      ></nav>
+
+      <div class="header-tools">
+
+        <button
+          id="sidebarButton"
+          class="icon-button mobile-only"
+          type="button"
+          aria-label="開啟百科分類"
+        >
+          ☰
+        </button>
+
+        <button
+          id="menuButton"
+          class="icon-button mobile-only"
+          type="button"
+          aria-label="開啟功能導覽"
+        >
+          ⚡
+        </button>
+
+        <span
+          class="icon-button"
+          title="APP 版本"
+          data-app-version
+        >
+          v1.0.0
+        </span>
+
+      </div>
+
+    </header>
+
+    <!-- ========================================
+         左側 + 主畫面
+    ========================================= -->
+    <div class="app-body">
+
+      <!-- 左側分類樹 -->
+      <aside
+        id="sidebar"
+        class="app-sidebar"
+      >
+
+        <div class="sidebar-search">
+
+          <label
+            class="sr-only"
+            for="globalSearch"
+          >
+            搜尋資料卡
+          </label>
+
+          <input
+            id="globalSearch"
+            type="search"
+            autocomplete="off"
+            placeholder="🔍 搜尋名稱、標籤、Prompt…"
+          >
+
+        </div>
+
+        <div
+          id="categoryTree"
+          class="category-tree"
+        ></div>
+
+      </aside>
+
+      <!-- 主畫面 -->
+      <main class="app-main">
+
+        <!-- ====================================
+             HOME
+        ===================================== -->
+        <section id="home">
+
+          <article class="panel hero-panel">
+
+            <div class="panel-inner">
+
+              <div class="panel-kicker">
+                2Y AI PROMPT ENCYCLOPEDIA
+              </div>
+
+              <h1>
+                AI 服飾提示詞，
+                <em>不要再靠猜。</em>
+              </h1>
+
+              <p class="hero-copy">
+                2Y的服飾百科是一套可持續擴充的服飾、
+                外觀、姿勢、場景與攝影提示詞資料庫。
+                相同資料卡可以透過命名配色與可調屬性，
+                生成不同版本，而不把不同顏色重複計算成新服飾。
+              </p>
+
+              <div class="hero-tags">
+                <span>60,000 官方預設目標</span>
+                <span>PixAI</span>
+                <span>Niji</span>
+                <span>TensorArt</span>
+                <span>GPT Image</span>
+                <span>JSON Data Packs</span>
+                <span>Offline Ready</span>
+              </div>
+
+            </div>
+
+          </article>
+
+          <div class="home-grid">
+
+            <article class="panel home-card">
+              <div class="panel-inner">
+
+                <div class="panel-kicker">
+                  APP INTRODUCTION
+                </div>
+
+                <h2>
+                  相同資料卡生成
+                </h2>
+
+                <p>
+                  一張版型資料卡可以切換顏色、
+                  材質、版型、長度、袖型、
+                  領口與性別呈現。
+                  顏色只作為變體，不重複灌出大量同版型卡片。
+                </p>
+
+              </div>
+            </article>
+
+            <article class="panel home-card">
+              <div class="panel-inner">
+
+                <div class="panel-kicker">
+                  LATEST UPDATE
+                </div>
+
+                <span class="update-version">
+                  v1.0.0
+                </span>
+
+                <h2>
+                  全新架構重新啟動
+                </h2>
+
+                <p>
+                  捨棄舊 Package／Hotfix 堆疊模式，
+                  改成單一入口、模組化架構與統一資料中心。
+                </p>
+
+              </div>
+            </article>
+
+            <article class="panel home-card">
+              <div class="panel-inner">
+
+                <div class="panel-kicker">
+                  LATEST PRESET CARDS
+                </div>
+
+                <h2>
+                  預設資料準備中
+                </h2>
+
+                <p>
+                  Step 01 只建立乾淨 APP 骨架。
+                  官方預設卡會等 Schema、Registry、
+                  百科與搜尋引擎穩定後再正式生產。
+                </p>
+
+              </div>
+            </article>
+
+            <article class="panel home-card">
+              <div class="panel-inner">
+
+                <div class="panel-kicker">
+                  2Y MESSAGE
+                </div>
+
+                <h2>
+                  🍮 2Y 的留言
+                </h2>
+
+                <p>
+                  v1.0.0 從零重建。
+                  這次先把地基做好，再一層一層蓋，
+                  不准再拿 Hotfix 當建材。
+                </p>
+
+              </div>
+            </article>
+
+          </div>
+
+        </section>
+
+        <!-- ====================================
+             Builder 上方動態模組
+        ===================================== -->
+        <div
+          id="beforeBuilderZone"
+          class="module-zone"
+        ></div>
+
+        <!-- ====================================
+             常駐 Prompt Dock
+        ===================================== -->
+        <section
+          id="promptDock"
+          class="prompt-dock"
+        >
+
+          <div
+            class="prompt-dock-icon"
+            aria-hidden="true"
+          >
+            🍮
+          </div>
+
+          <div class="prompt-dock-copy">
+            <strong>
+              AI Prompt Builder
+            </strong>
+
+            <span id="promptDockCount">
+              已加入 0 項
+            </span>
+          </div>
+
+          <button
+            id="promptDockButton"
+            class="primary-button"
+            type="button"
+          >
+            展開提示詞組合器
+          </button>
+
+        </section>
+
+        <!-- Prompt Builder 展開區 -->
+        <div
+          id="promptBuilderZone"
+          class="module-zone"
+        ></div>
+
+        <!-- ====================================
+             Builder 下方動態模組
+        ===================================== -->
+        <div
+          id="afterBuilderZone"
+          class="module-zone"
+        ></div>
+
+        <!-- ====================================
+             固定最下方統計
+        ===================================== -->
+        <section
+          id="statistics"
+          class="panel statistics-section"
+        >
+
+          <div class="panel-inner">
+
+            <div class="panel-kicker">
+              SYSTEM STATISTICS
+            </div>
+
+            <h2>
+              百科統計
+            </h2>
+
+            <div class="statistics-grid">
+
+              <div class="stat-card">
+                <span>官方百科</span>
+                <strong id="statOfficial">
+                  0 / 60,000
+                </strong>
+              </div>
+
+              <div class="stat-card">
+                <span>自訂資料卡</span>
+                <strong id="statCustom">
+                  0
+                </strong>
+              </div>
+
+              <div class="stat-card">
+                <span>外掛資料卡</span>
+                <strong id="statExternal">
+                  0
+                </strong>
+              </div>
+
+              <div class="stat-card">
+                <span>收藏</span>
+                <strong id="statFavorites">
+                  0
+                </strong>
+              </div>
+
+              <div class="stat-card">
+                <span>APP Version</span>
+                <strong id="statVersion">
+                  v1.0.0
+                </strong>
+              </div>
+
+            </div>
+
+            <footer class="app-footer">
+              <p>
+                2Y AI Prompt Encyclopedia
+                ·
+                <span data-app-version>
+                  v1.0.0
+                </span>
+              </p>
+
+              <p>
+                2Y 聯繫方法：正式內容將於後續設定。
+              </p>
+            </footer>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- v1 唯一 JS 入口 -->
+  <script
+    type="module"
+    src="./js/app.js"
+  ></script>
+
+</body>
+</html>
