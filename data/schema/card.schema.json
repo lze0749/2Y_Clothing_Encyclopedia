@@ -1,0 +1,506 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://2y-ai-prompt-encyclopedia.local/schema/card-v1.json",
+  "title": "2Y AI Prompt Encyclopedia Card v1",
+  "description": "2Y AI Prompt Encyclopedia v1.0.0 統一資料卡格式",
+  "type": "object",
+
+  "required": [
+    "id",
+    "schemaVersion",
+    "category",
+    "nameZh",
+    "nameEn",
+    "prompt",
+    "tags",
+    "platforms",
+    "colorways",
+    "attributes",
+    "relations",
+    "source"
+  ],
+
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+
+    "category": {
+      "type": "string",
+      "enum": [
+        "tops-innerwear",
+        "trousers",
+        "skirts",
+        "dresses",
+        "outerwear-capes-shawls",
+        "accessories",
+        "hairstyles",
+        "hair-accessories",
+        "eyes",
+        "makeup",
+        "shoes",
+        "leg-accessories",
+        "socks",
+        "hand-accessories",
+        "nail-art",
+        "bags",
+        "handheld-props",
+        "waist-accessories",
+        "special-styling",
+        "single-poses",
+        "duo-poses",
+        "ground-items",
+        "sky-items",
+        "animals",
+        "plants",
+        "food",
+        "foreground-items",
+        "background-scenes",
+        "camera",
+        "composition",
+        "lighting",
+        "filters",
+        "atmosphere",
+        "purpose"
+      ]
+    },
+
+    "subcategory": {
+      "type": "string",
+      "default": ""
+    },
+
+    "nameZh": {
+      "type": "string",
+      "minLength": 1
+    },
+
+    "nameEn": {
+      "type": "string",
+      "minLength": 1
+    },
+
+    "descriptionZh": {
+      "type": "string",
+      "default": ""
+    },
+
+    "descriptionEn": {
+      "type": "string",
+      "default": ""
+    },
+
+    "prompt": {
+      "type": "object",
+
+      "required": [
+        "positive",
+        "negative"
+      ],
+
+      "properties": {
+        "positive": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+
+        "negative": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+
+    "platforms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+
+      "items": {
+        "type": "string",
+        "enum": [
+          "pixai",
+          "niji",
+          "tensorart",
+          "gpt-image"
+        ]
+      }
+    },
+
+    "colorways": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/colorway"
+      }
+    },
+
+    "attributes": {
+      "type": "object",
+
+      "required": [
+        "material",
+        "fit",
+        "length",
+        "sleeve",
+        "neckline",
+        "gender"
+      ],
+
+      "properties": {
+        "material": {
+          "$ref": "#/$defs/attributeOptions"
+        },
+
+        "fit": {
+          "$ref": "#/$defs/attributeOptions"
+        },
+
+        "length": {
+          "$ref": "#/$defs/attributeOptions"
+        },
+
+        "sleeve": {
+          "$ref": "#/$defs/attributeOptions"
+        },
+
+        "neckline": {
+          "$ref": "#/$defs/attributeOptions"
+        },
+
+        "gender": {
+          "$ref": "#/$defs/attributeOptions"
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "anatomy": {
+      "type": "object",
+
+      "properties": {
+        "definition": {
+          "type": "string"
+        },
+
+        "silhouette": {
+          "type": "string"
+        },
+
+        "structure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "neckline": {
+          "type": "string"
+        },
+
+        "sleeve": {
+          "type": "string"
+        },
+
+        "body": {
+          "type": "string"
+        },
+
+        "hem": {
+          "type": "string"
+        },
+
+        "closure": {
+          "type": "string"
+        },
+
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "drape": {
+          "type": "string"
+        },
+
+        "fits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "wearingPosition": {
+          "type": "string"
+        },
+
+        "styling": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "aiPromptBreakdown": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "commonAiErrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "negativePromptTips": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "platformTips": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+
+      "additionalProperties": true
+    },
+
+    "relations": {
+      "type": "object",
+
+      "required": [
+        "similarItems",
+        "matchingItems"
+      ],
+
+      "properties": {
+        "similarItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+
+        "matchingItems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "source": {
+      "type": "object",
+
+      "required": [
+        "type",
+        "packId"
+      ],
+
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "official",
+            "custom",
+            "external"
+          ]
+        },
+
+        "packId": {
+          "type": "string",
+          "minLength": 1
+        },
+
+        "packVersion": {
+          "type": "string",
+          "default": "1.0.0"
+        },
+
+        "author": {
+          "type": "string",
+          "default": ""
+        }
+      },
+
+      "additionalProperties": true
+    },
+
+    "metadata": {
+      "type": "object",
+
+      "properties": {
+        "createdAt": {
+          "type": "string"
+        },
+
+        "updatedAt": {
+          "type": "string"
+        },
+
+        "notes": {
+          "type": "string"
+        }
+      },
+
+      "additionalProperties": true
+    }
+  },
+
+  "$defs": {
+    "attributeOptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attributeOption"
+      }
+    },
+
+    "attributeOption": {
+      "type": "object",
+
+      "required": [
+        "id",
+        "nameZh",
+        "nameEn",
+        "prompt"
+      ],
+
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+
+        "nameZh": {
+          "type": "string"
+        },
+
+        "nameEn": {
+          "type": "string"
+        },
+
+        "prompt": {
+          "type": "string"
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "colorway": {
+      "type": "object",
+
+      "required": [
+        "id",
+        "nameZh",
+        "nameEn",
+        "prompt",
+        "palette"
+      ],
+
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+
+        "nameZh": {
+          "type": "string"
+        },
+
+        "nameEn": {
+          "type": "string"
+        },
+
+        "prompt": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+
+        "palette": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/paletteColor"
+          }
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "paletteColor": {
+      "type": "object",
+
+      "required": [
+        "nameZh",
+        "nameEn",
+        "hex"
+      ],
+
+      "properties": {
+        "nameZh": {
+          "type": "string"
+        },
+
+        "nameEn": {
+          "type": "string"
+        },
+
+        "hex": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        }
+      },
+
+      "additionalProperties": false
+    }
+  },
+
+  "additionalProperties": true
+}

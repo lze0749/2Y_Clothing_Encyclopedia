@@ -1,0 +1,287 @@
+{
+  "schemaVersion": "1.0.0",
+
+  "pack": {
+    "id": "2y.core",
+    "name": "2Y Official Preset Database",
+    "version": "1.0.0",
+    "sourceType": "official"
+  },
+
+  "targetCount": 60000,
+  "defaultChunkSize": 250,
+
+  "categories": [
+    {
+      "id": "tops-innerwear",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./tops-innerwear/"
+    },
+
+    {
+      "id": "trousers",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./trousers/"
+    },
+
+    {
+      "id": "skirts",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./skirts/"
+    },
+
+    {
+      "id": "dresses",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./dresses/"
+    },
+
+    {
+      "id": "outerwear-capes-shawls",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./outerwear-capes-shawls/"
+    },
+
+    {
+      "id": "accessories",
+      "expectedCount": 5000,
+      "chunkSize": 250,
+      "expectedChunks": 20,
+      "path": "./accessories/"
+    },
+
+    {
+      "id": "hairstyles",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./hairstyles/"
+    },
+
+    {
+      "id": "hair-accessories",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./hair-accessories/"
+    },
+
+    {
+      "id": "eyes",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./eyes/"
+    },
+
+    {
+      "id": "makeup",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./makeup/"
+    },
+
+    {
+      "id": "shoes",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./shoes/"
+    },
+
+    {
+      "id": "leg-accessories",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./leg-accessories/"
+    },
+
+    {
+      "id": "socks",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./socks/"
+    },
+
+    {
+      "id": "hand-accessories",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./hand-accessories/"
+    },
+
+    {
+      "id": "nail-art",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./nail-art/"
+    },
+
+    {
+      "id": "bags",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./bags/"
+    },
+
+    {
+      "id": "handheld-props",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./handheld-props/"
+    },
+
+    {
+      "id": "waist-accessories",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./waist-accessories/"
+    },
+
+    {
+      "id": "special-styling",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./special-styling/"
+    },
+
+    {
+      "id": "single-poses",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./single-poses/"
+    },
+
+    {
+      "id": "duo-poses",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./duo-poses/"
+    },
+
+    {
+      "id": "ground-items",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./ground-items/"
+    },
+
+    {
+      "id": "sky-items",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./sky-items/"
+    },
+
+    {
+      "id": "animals",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./animals/"
+    },
+
+    {
+      "id": "plants",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./plants/"
+    },
+
+    {
+      "id": "food",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./food/"
+    },
+
+    {
+      "id": "foreground-items",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./foreground-items/"
+    },
+
+    {
+      "id": "background-scenes",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./background-scenes/"
+    },
+
+    {
+      "id": "camera",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./camera/"
+    },
+
+    {
+      "id": "composition",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./composition/"
+    },
+
+    {
+      "id": "lighting",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./lighting/"
+    },
+
+    {
+      "id": "filters",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./filters/"
+    },
+
+    {
+      "id": "atmosphere",
+      "expectedCount": 2000,
+      "chunkSize": 250,
+      "expectedChunks": 8,
+      "path": "./atmosphere/"
+    },
+
+    {
+      "id": "purpose",
+      "expectedCount": 1000,
+      "chunkSize": 250,
+      "expectedChunks": 4,
+      "path": "./purpose/"
+    }
+  ]
+}

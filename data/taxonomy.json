@@ -1,0 +1,350 @@
+{
+  "schemaVersion": "1.0.0",
+
+  "groups": [
+    {
+      "id": "garments",
+      "nameZh": "服裝",
+      "nameEn": "Garments",
+      "icon": "👗",
+      "categories": [
+        "tops-innerwear",
+        "trousers",
+        "skirts",
+        "dresses",
+        "outerwear-capes-shawls"
+      ]
+    },
+
+    {
+      "id": "accessories",
+      "nameZh": "配件",
+      "nameEn": "Accessories",
+      "icon": "💎",
+      "categories": [
+        "accessories",
+        "leg-accessories",
+        "hand-accessories",
+        "waist-accessories",
+        "bags",
+        "handheld-props"
+      ]
+    },
+
+    {
+      "id": "appearance",
+      "nameZh": "外觀",
+      "nameEn": "Appearance",
+      "icon": "💇",
+      "categories": [
+        "hairstyles",
+        "hair-accessories",
+        "eyes",
+        "makeup",
+        "nail-art"
+      ]
+    },
+
+    {
+      "id": "feet",
+      "nameZh": "足部",
+      "nameEn": "Footwear",
+      "icon": "👢",
+      "categories": [
+        "shoes",
+        "socks"
+      ]
+    },
+
+    {
+      "id": "special",
+      "nameZh": "特殊造型",
+      "nameEn": "Special Styling",
+      "icon": "🪽",
+      "categories": [
+        "special-styling"
+      ]
+    },
+
+    {
+      "id": "poses",
+      "nameZh": "姿勢",
+      "nameEn": "Poses",
+      "icon": "🕺",
+      "categories": [
+        "single-poses",
+        "duo-poses"
+      ]
+    },
+
+    {
+      "id": "scene",
+      "nameZh": "場景元素",
+      "nameEn": "Scene Elements",
+      "icon": "🌍",
+      "categories": [
+        "ground-items",
+        "sky-items",
+        "animals",
+        "plants",
+        "food",
+        "foreground-items",
+        "background-scenes"
+      ]
+    },
+
+    {
+      "id": "camera",
+      "nameZh": "攝影",
+      "nameEn": "Photography",
+      "icon": "🎥",
+      "categories": [
+        "camera",
+        "composition",
+        "lighting",
+        "filters",
+        "atmosphere",
+        "purpose"
+      ]
+    }
+  ],
+
+  "categories": [
+    {
+      "id": "tops-innerwear",
+      "nameZh": "上衣／內搭",
+      "nameEn": "Tops / Innerwear"
+    },
+
+    {
+      "id": "trousers",
+      "nameZh": "褲子",
+      "nameEn": "Trousers"
+    },
+
+    {
+      "id": "skirts",
+      "nameZh": "裙子",
+      "nameEn": "Skirts"
+    },
+
+    {
+      "id": "dresses",
+      "nameZh": "連身裙",
+      "nameEn": "Dresses"
+    },
+
+    {
+      "id": "outerwear-capes-shawls",
+      "nameZh": "外套／斗篷／披肩",
+      "nameEn": "Outerwear / Capes / Shawls"
+    },
+
+    {
+      "id": "accessories",
+      "nameZh": "飾品配件",
+      "nameEn": "Accessories"
+    },
+
+    {
+      "id": "hairstyles",
+      "nameZh": "髮型",
+      "nameEn": "Hairstyles"
+    },
+
+    {
+      "id": "hair-accessories",
+      "nameZh": "髮飾",
+      "nameEn": "Hair Accessories"
+    },
+
+    {
+      "id": "eyes",
+      "nameZh": "眼睛",
+      "nameEn": "Eyes"
+    },
+
+    {
+      "id": "makeup",
+      "nameZh": "妝容",
+      "nameEn": "Makeup"
+    },
+
+    {
+      "id": "shoes",
+      "nameZh": "鞋子",
+      "nameEn": "Shoes"
+    },
+
+    {
+      "id": "leg-accessories",
+      "nameZh": "腿飾",
+      "nameEn": "Leg Accessories"
+    },
+
+    {
+      "id": "socks",
+      "nameZh": "襪子",
+      "nameEn": "Socks"
+    },
+
+    {
+      "id": "hand-accessories",
+      "nameZh": "手部配件",
+      "nameEn": "Hand Accessories"
+    },
+
+    {
+      "id": "nail-art",
+      "nameZh": "美甲",
+      "nameEn": "Nail Art"
+    },
+
+    {
+      "id": "bags",
+      "nameZh": "包袋",
+      "nameEn": "Bags"
+    },
+
+    {
+      "id": "handheld-props",
+      "nameZh": "手持配件",
+      "nameEn": "Handheld Props"
+    },
+
+    {
+      "id": "waist-accessories",
+      "nameZh": "腰部配飾",
+      "nameEn": "Waist Accessories"
+    },
+
+    {
+      "id": "special-styling",
+      "nameZh": "特殊造型",
+      "nameEn": "Special Styling"
+    },
+
+    {
+      "id": "single-poses",
+      "nameZh": "單人姿勢",
+      "nameEn": "Single Character Poses"
+    },
+
+    {
+      "id": "duo-poses",
+      "nameZh": "雙人姿勢",
+      "nameEn": "Two Character Poses"
+    },
+
+    {
+      "id": "ground-items",
+      "nameZh": "地面物品",
+      "nameEn": "Ground Items"
+    },
+
+    {
+      "id": "sky-items",
+      "nameZh": "天空物品",
+      "nameEn": "Sky Items"
+    },
+
+    {
+      "id": "animals",
+      "nameZh": "動物",
+      "nameEn": "Animals"
+    },
+
+    {
+      "id": "plants",
+      "nameZh": "植物",
+      "nameEn": "Plants"
+    },
+
+    {
+      "id": "food",
+      "nameZh": "食物",
+      "nameEn": "Food"
+    },
+
+    {
+      "id": "foreground-items",
+      "nameZh": "前景物品",
+      "nameEn": "Foreground Items"
+    },
+
+    {
+      "id": "background-scenes",
+      "nameZh": "背景場景",
+      "nameEn": "Background Scenes"
+    },
+
+    {
+      "id": "camera",
+      "nameZh": "鏡頭",
+      "nameEn": "Camera"
+    },
+
+    {
+      "id": "composition",
+      "nameZh": "構圖",
+      "nameEn": "Composition"
+    },
+
+    {
+      "id": "lighting",
+      "nameZh": "光線",
+      "nameEn": "Lighting"
+    },
+
+    {
+      "id": "filters",
+      "nameZh": "濾鏡",
+      "nameEn": "Filters"
+    },
+
+    {
+      "id": "atmosphere",
+      "nameZh": "氛圍",
+      "nameEn": "Atmosphere"
+    },
+
+    {
+      "id": "purpose",
+      "nameZh": "用途",
+      "nameEn": "Purpose"
+    }
+  ],
+
+  "aliases": {
+    "上衣/內搭": "tops-innerwear",
+    "上衣／內搭": "tops-innerwear",
+
+    "外套/斗篷/披肩": "outerwear-capes-shawls",
+    "外套／斗篷／披肩": "outerwear-capes-shawls",
+
+    "腿部配件": "leg-accessories",
+    "腿部飾品": "leg-accessories",
+    "腿飾": "leg-accessories",
+
+    "腰部配件": "waist-accessories",
+    "腰部配飾": "waist-accessories",
+
+    "背景": "background-scenes",
+    "後景": "background-scenes",
+    "背景場景": "background-scenes",
+    "背景場景(後景)": "background-scenes",
+    "背景場景（後景）": "background-scenes",
+
+    "地飾": "ground-items",
+    "地面物品": "ground-items",
+
+    "頂飾": "sky-items",
+    "天空物品": "sky-items",
+
+    "雙人姿勢": "duo-poses",
+    "多人姿勢": "duo-poses",
+
+    "眼部": "eyes",
+    "眼睛": "eyes"
+  }
+}

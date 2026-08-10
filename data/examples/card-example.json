@@ -1,0 +1,211 @@
+{
+  "id": "skirts.gothic-pleated-mini.0001",
+  "schemaVersion": "1.0.0",
+  "revision": 1,
+
+  "category": "skirts",
+  "subcategory": "迷你裙",
+
+  "nameZh": "哥德式百褶迷你裙",
+  "nameEn": "Gothic Pleated Mini Skirt",
+
+  "descriptionZh": "帶有哥德風格細節的短版百褶裙。",
+  "descriptionEn": "A short pleated skirt featuring gothic styling details.",
+
+  "prompt": {
+    "positive": [
+      "gothic pleated mini skirt",
+      "structured pleats",
+      "high waist",
+      "decorative chain details"
+    ],
+
+    "negative": [
+      "uneven pleats",
+      "broken waistband",
+      "asymmetrical hem"
+    ]
+  },
+
+  "tags": [
+    "哥德",
+    "百褶",
+    "迷你裙",
+    "高腰",
+    "鏈條"
+  ],
+
+  "platforms": [
+    "pixai",
+    "niji",
+    "tensorart",
+    "gpt-image"
+  ],
+
+  "colorways": [
+    {
+      "id": "black-silver",
+      "nameZh": "曜黑銀",
+      "nameEn": "Obsidian Black and Silver",
+
+      "prompt": [
+        "obsidian black fabric",
+        "silver chain details"
+      ],
+
+      "palette": [
+        {
+          "nameZh": "曜黑",
+          "nameEn": "Obsidian Black",
+          "hex": "#111111"
+        },
+
+        {
+          "nameZh": "金屬銀",
+          "nameEn": "Metallic Silver",
+          "hex": "#BFC3C7"
+        }
+      ]
+    },
+
+    {
+      "id": "aurora-purple-black",
+      "nameZh": "極光紫黑",
+      "nameEn": "Aurora Purple and Black",
+
+      "prompt": [
+        "aurora purple accents",
+        "deep black fabric"
+      ],
+
+      "palette": [
+        {
+          "nameZh": "極光紫",
+          "nameEn": "Aurora Purple",
+          "hex": "#9D4EDD"
+        },
+
+        {
+          "nameZh": "深黑",
+          "nameEn": "Deep Black",
+          "hex": "#090909"
+        }
+      ]
+    }
+  ],
+
+  "attributes": {
+    "material": [
+      {
+        "id": "mat-cotton-blend",
+        "nameZh": "棉混紡",
+        "nameEn": "Cotton Blend",
+        "prompt": "cotton blend fabric"
+      },
+
+      {
+        "id": "mat-faux-leather",
+        "nameZh": "仿皮革",
+        "nameEn": "Faux Leather",
+        "prompt": "faux leather fabric"
+      }
+    ],
+
+    "fit": [
+      {
+        "id": "fit-structured",
+        "nameZh": "挺版",
+        "nameEn": "Structured",
+        "prompt": "structured silhouette"
+      }
+    ],
+
+    "length": [
+      {
+        "id": "length-mini",
+        "nameZh": "迷你長度",
+        "nameEn": "Mini Length",
+        "prompt": "mini length"
+      }
+    ],
+
+    "sleeve": [],
+
+    "neckline": [],
+
+    "gender": [
+      {
+        "id": "gender-feminine",
+        "nameZh": "女性化",
+        "nameEn": "Feminine",
+        "prompt": "feminine styling"
+      },
+
+      {
+        "id": "gender-androgynous",
+        "nameZh": "中性",
+        "nameEn": "Androgynous",
+        "prompt": "androgynous styling"
+      }
+    ]
+  },
+
+  "anatomy": {
+    "definition": "以規律褶線形成裙身結構的短版裙裝。",
+    "silhouette": "高腰、向下散開的短版 A 字輪廓。",
+
+    "structure": [
+      "腰頭",
+      "百褶裙身",
+      "裙擺",
+      "裝飾鏈條"
+    ],
+
+    "hem": "短版平整裙擺。",
+    "closure": "側拉鍊或後拉鍊。",
+
+    "materials": [
+      "棉混紡",
+      "聚酯纖維",
+      "仿皮革"
+    ],
+
+    "aiPromptBreakdown": [
+      "gothic",
+      "pleated",
+      "mini skirt",
+      "high waist",
+      "chain details"
+    ],
+
+    "commonAiErrors": [
+      "褶線數量不一致",
+      "裙擺扭曲",
+      "鏈條穿透布料"
+    ],
+
+    "negativePromptTips": [
+      "uneven pleats",
+      "broken chain",
+      "warped hem"
+    ]
+  },
+
+  "relations": {
+    "similarItems": [],
+    "matchingItems": []
+  },
+
+  "source": {
+    "type": "official",
+    "packId": "2y.core",
+    "packVersion": "1.0.0",
+    "author": "2Y"
+  },
+
+  "metadata": {
+    "createdAt": "2026-08-10",
+    "updatedAt": "2026-08-10",
+    "notes": "Card v1 格式示範，不屬於正式預設資料。"
+  }
+}
