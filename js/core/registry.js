@@ -472,7 +472,7 @@ class DataRegistry {
       this.#notify({
         type: "source-cards-removed",
         sourceId,
-        removed
+        removed,
 
         removedIds
       });
