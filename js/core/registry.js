@@ -380,6 +380,9 @@ class DataRegistry {
         accepted:
           result.accepted.length,
 
+        acceptedIds:
+          [...result.accepted],
+
         rejected:
           result.rejected.length,
 
@@ -437,6 +440,8 @@ class DataRegistry {
   ) {
     let removed = 0;
 
+    const removedIds = [];
+
     for (
       const [
         cardId,
@@ -448,6 +453,10 @@ class DataRegistry {
         sourceId
       ) {
         this.#cards.delete(
+          cardId
+        );
+
+        removedIds.push(
           cardId
         );
 
@@ -464,6 +473,8 @@ class DataRegistry {
         type: "source-cards-removed",
         sourceId,
         removed
+
+        removedIds
       });
     }
 

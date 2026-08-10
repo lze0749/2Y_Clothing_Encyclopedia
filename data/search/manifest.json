@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "engineVersion": "1.0.0",
+
+  "description": "2Y AI Prompt Encyclopedia prebuilt search index manifest",
+
+  "targetDocuments": 60000,
+  "indexedDocuments": 0,
+
+  "strategy": "category-segments",
+
+  "fields": {
+    "nameZh": 12,
+    "nameEn": 12,
+    "tags": 8,
+    "materials": 7,
+    "colors": 6,
+    "positivePrompt": 5,
+    "description": 3,
+    "negativePrompt": 2
+  },
+
+  "segmentFormat": {
+    "schemaVersion": "1.0.0",
+
+    "documents": [
+      {
+        "id": "card-id",
+        "category": "skirts",
+        "sourceType": "official",
+        "sourceId": "2y.core",
+        "chunk": "./skirts/chunk-001.json",
+        "nameZh": "",
+        "nameEn": "",
+        "description": "",
+        "tags": [],
+        "materials": [],
+        "genders": [],
+        "platforms": [],
+        "colors": [],
+        "positivePrompt": [],
+        "negativePrompt": [],
+        "updatedAt": ""
+      }
+    ]
+  },
+
+  "segments": []
+}

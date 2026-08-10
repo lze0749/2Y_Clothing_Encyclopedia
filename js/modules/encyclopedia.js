@@ -3,13 +3,21 @@
 /*
  * 2Y AI Prompt Encyclopedia
  * Encyclopedia
- * Step 04 integration
+ * Step 05 Search Integration
  * Version: 1.0.0
  */
 
 import {
   createCardSystem
 } from "../ui/card.js";
+
+import {
+  searchEngine
+} from "../core/search-engine.js";
+
+import {
+  presetLoader
+} from "../core/preset-loader.js";
 
 export function createEncyclopediaController({
   registry,
@@ -37,6 +45,7 @@ export function createEncyclopediaController({
   };
 
   let host = null;
+
   let refs = {};
 
   let cardSystem = null;
@@ -44,11 +53,21 @@ export function createEncyclopediaController({
   let unsubscribeRegistry =
     null;
 
+  let searchReady = false;
+
+  let renderSequence = 0;
+
+  let searchTimer = null;
+
   let cardControlActive =
     false;
 
   let pendingRegistryRefresh =
     false;
+
+  /* ========================================
+     Lifecycle
+  ======================================== */
 
   function mount(target) {
     host = target;
@@ -66,17 +85,68 @@ export function createEncyclopediaController({
 
     bindEvents();
 
-    refreshFacetOptions();
+    renderInitialState();
 
-    render();
+    initializeSearchPipeline();
+  }
 
-    unsubscribeRegistry =
-      registry.subscribe(
-        handleRegistryChange
+  async function initializeSearchPipeline() {
+    setSearchStatus(
+      "搜尋引擎啟動中…",
+      "busy"
+    );
+
+    try {
+      await Promise.all([
+        presetLoader.init(
+          registry
+        ),
+
+        searchEngine.init(
+          registry
+        )
+      ]);
+
+      searchReady =
+        true;
+
+      await refreshFacetOptions();
+
+      const status =
+        await searchEngine
+          .status();
+
+      setSearchStatus(
+        `Search Worker 已就緒 · 索引 ${status.documentCount.toLocaleString(
+          "zh-TW"
+        )} 筆 · 預先索引 Segment ${status.loadedSegments}/${status.availableSegments}`,
+        "ready"
       );
+
+      render();
+
+      unsubscribeRegistry =
+        registry.subscribe(
+          handleRegistryChange
+        );
+    } catch (error) {
+      console.error(
+        "Search Engine 初始化失敗：",
+        error
+      );
+
+      setSearchStatus(
+        `搜尋引擎初始化失敗：${error.message}`,
+        "error"
+      );
+    }
   }
 
   function destroy() {
+    window.clearTimeout(
+      searchTimer
+    );
+
     unsubscribeRegistry?.();
 
     unsubscribeRegistry =
@@ -89,6 +159,7 @@ export function createEncyclopediaController({
     host?.replaceChildren();
 
     host = null;
+
     refs = {};
   }
 
@@ -133,6 +204,11 @@ export function createEncyclopediaController({
         "[data-ency-category-chips]"
       );
 
+    refs.searchStatus =
+      host.querySelector(
+        "[data-ency-search-status]"
+      );
+
     refs.summary =
       host.querySelector(
         "[data-ency-summary]"
@@ -153,6 +229,60 @@ export function createEncyclopediaController({
         "[data-ency-initial-state]"
       );
   }
+
+  /* ========================================
+     Registry Events
+  ======================================== */
+
+  function handleRegistryChange(
+    message
+  ) {
+    if (
+      ![
+        "cards-updated",
+        "card-removed",
+        "source-cards-removed",
+        "source-status-changed",
+        "source-registered",
+        "source-unregistered"
+      ].includes(
+        message.type
+      )
+    ) {
+      return;
+    }
+
+    if (
+      cardControlActive
+    ) {
+      pendingRegistryRefresh =
+        true;
+
+      return;
+    }
+
+    scheduleRefresh();
+  }
+
+  function scheduleRefresh() {
+    window.clearTimeout(
+      searchTimer
+    );
+
+    searchTimer =
+      window.setTimeout(
+        async () => {
+          await refreshFacetOptions();
+
+          render();
+        },
+        80
+      );
+  }
+
+  /* ========================================
+     Events
+  ======================================== */
 
   function bindEvents() {
     host.addEventListener(
@@ -179,35 +309,6 @@ export function createEncyclopediaController({
       "focusout",
       handleFocusOut
     );
-  }
-
-  function handleRegistryChange(
-    message
-  ) {
-    if (
-      ![
-        "cards-updated",
-        "card-removed",
-        "source-cards-removed",
-        "source-status-changed",
-        "source-registered",
-        "source-unregistered"
-      ].includes(
-        message.type
-      )
-    ) {
-      return;
-    }
-
-    if (cardControlActive) {
-      pendingRegistryRefresh =
-        true;
-
-      return;
-    }
-
-    refreshFacetOptions();
-    render();
   }
 
   function handleFocusIn(
@@ -254,8 +355,7 @@ export function createEncyclopediaController({
           pendingRegistryRefresh =
             false;
 
-          refreshFacetOptions();
-          render();
+          scheduleRefresh();
         }
       },
       180
@@ -273,7 +373,8 @@ export function createEncyclopediaController({
     }
 
     state.query =
-      event.target.value
+      event.target
+        .value
         .trim();
 
     state.page = 1;
@@ -293,7 +394,26 @@ export function createEncyclopediaController({
       state.query
     );
 
-    render();
+    window.clearTimeout(
+      searchTimer
+    );
+
+    if (
+      state.query
+    ) {
+      setSearchStatus(
+        "正在等待輸入完成…",
+        "busy"
+      );
+    }
+
+    searchTimer =
+      window.setTimeout(
+        () => {
+          render();
+        },
+        180
+      );
   }
 
   function handleChange(
@@ -303,8 +423,7 @@ export function createEncyclopediaController({
       event.target;
 
     /*
-     * Card controls 由 Card System 自己管理。
-     * Encyclopedia 不碰。
+     * Card 控制器交給 Card System。
      */
     if (
       target.matches?.(
@@ -431,6 +550,7 @@ export function createEncyclopediaController({
       state.page =
         Math.max(
           1,
+
           Number(
             pageButton.dataset
               .encyPage
@@ -440,11 +560,18 @@ export function createEncyclopediaController({
       render();
 
       host.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+        behavior:
+          "smooth",
+
+        block:
+          "start"
       });
     }
   }
+
+  /* ========================================
+     Public State
+  ======================================== */
 
   function setCategories(
     categories
@@ -480,10 +607,29 @@ export function createEncyclopediaController({
 
     state.page = 1;
 
+    /*
+     * 官方資料未來只預載選中分類的第一個已發布 Chunk。
+     */
+    presetLoader
+      .primeCategories(
+        [
+          ...state.categories
+        ]
+      )
+      .then(
+        () =>
+          refreshFacetOptions()
+      )
+      .catch(
+        console.error
+      );
+
     render();
   }
 
-  function setQuery(query) {
+  function setQuery(
+    query
+  ) {
     state.query =
       String(
         query || ""
@@ -494,7 +640,9 @@ export function createEncyclopediaController({
         state.query;
     }
 
-    if (state.query) {
+    if (
+      state.query
+    ) {
       state.activated =
         true;
     } else if (
@@ -511,7 +659,8 @@ export function createEncyclopediaController({
   }
 
   function showAll() {
-    state.categories.clear();
+    state.categories
+      .clear();
 
     state.showAllExplicit =
       true;
@@ -533,7 +682,8 @@ export function createEncyclopediaController({
     state.showAllExplicit =
       false;
 
-    state.categories.clear();
+    state.categories
+      .clear();
 
     state.query = "";
 
@@ -561,15 +711,19 @@ export function createEncyclopediaController({
     onQueryChange("");
 
     syncControls();
+
+    refreshFacetOptions();
+
     render();
   }
 
   function removeCategory(
     categoryId
   ) {
-    state.categories.delete(
-      categoryId
-    );
+    state.categories
+      .delete(
+        categoryId
+      );
 
     state.page = 1;
 
@@ -588,37 +742,19 @@ export function createEncyclopediaController({
       ]
     );
 
+    refreshFacetOptions();
+
     render();
   }
 
-  function refreshFacetOptions() {
-    const cards =
-      registry.getCards({
-        enabledOnly: true
-      });
+  /* ========================================
+     Search
+  ======================================== */
 
-    replaceFacetOptions(
-      refs.material,
-      "全部材質",
-      collectAttributeValues(
-        cards,
-        "material"
-      ),
-      state.material
-    );
+  async function render() {
+    const sequence =
+      ++renderSequence;
 
-    replaceFacetOptions(
-      refs.gender,
-      "全部性別",
-      collectAttributeValues(
-        cards,
-        "gender"
-      ),
-      state.gender
-    );
-  }
-
-  function render() {
     if (!host) {
       return;
     }
@@ -627,70 +763,263 @@ export function createEncyclopediaController({
 
     renderCategoryChips();
 
-    if (!state.activated) {
+    if (
+      !state.activated
+    ) {
       renderInitialState();
 
       return;
     }
 
-    const filtered =
-      getFilteredCards();
+    if (
+      !searchReady
+    ) {
+      renderSearchLoading();
 
-    const total =
-      filtered.length;
+      return;
+    }
 
-    const totalPages =
-      Math.max(
-        1,
-        Math.ceil(
-          total /
-          state.pageSize
-        )
-      );
+    setSearchStatus(
+      state.query
+        ? `正在搜尋「${state.query}」…`
+        : "正在讀取索引…",
 
-    state.page =
-      Math.min(
+      "busy"
+    );
+
+    try {
+      let offset =
+        (
+          state.page - 1
+        ) *
+        state.pageSize;
+
+      let result =
+        await executeSearch(
+          offset
+        );
+
+      if (
+        sequence !==
+        renderSequence
+      ) {
+        return;
+      }
+
+      const totalPages =
         Math.max(
           1,
-          state.page
-        ),
+
+          Math.ceil(
+            result.total /
+            state.pageSize
+          )
+        );
+
+      if (
+        state.page >
+        totalPages
+      ) {
+        state.page =
+          totalPages;
+
+        offset =
+          (
+            state.page - 1
+          ) *
+          state.pageSize;
+
+        result =
+          await executeSearch(
+            offset
+          );
+      }
+
+      if (
+        sequence !==
+        renderSequence
+      ) {
+        return;
+      }
+
+      /*
+       * Search Worker 只回索引資料。
+       * Card 本體還沒載入時，
+       * 這裡才去抓需要的 Chunk。
+       */
+      const lazyResult =
+        await presetLoader
+          .ensureHits(
+            result.hits
+          );
+
+      if (
+        sequence !==
+        renderSequence
+      ) {
+        return;
+      }
+
+      const cards =
+        result.hits
+          .map(
+            (hit) => ({
+              card:
+                registry.getCard(
+                  hit.id
+                ),
+
+              hit
+            })
+          )
+          .filter(
+            (entry) =>
+              Boolean(
+                entry.card
+              )
+          );
+
+      refs.initialState.hidden =
+        true;
+
+      refs.results.hidden =
+        false;
+
+      refs.summary.textContent =
+        result.total
+          ? `找到 ${result.total.toLocaleString(
+              "zh-TW"
+            )} 筆，第 ${state.page} / ${totalPages} 頁`
+          : createEmptySummary();
+
+      renderCards(
+        cards
+      );
+
+      renderPagination(
         totalPages
       );
 
-    const start =
-      (
-        state.page - 1
-      ) *
-      state.pageSize;
+      const status =
+        await searchEngine
+          .status();
 
-    const pageCards =
-      filtered.slice(
-        start,
-        start +
-        state.pageSize
+      if (
+        sequence !==
+        renderSequence
+      ) {
+        return;
+      }
+
+      const lazyText =
+        lazyResult.requested
+          ? ` · 本頁按需載入 ${lazyResult.fulfilled}/${lazyResult.requested} 個 Chunk`
+          : "";
+
+      setSearchStatus(
+        `Search Worker · 索引 ${status.documentCount.toLocaleString(
+          "zh-TW"
+        )} 筆 · Token ${status.tokenCount.toLocaleString(
+          "zh-TW"
+        )}${lazyText}`,
+
+        "ready"
+      );
+    } catch (error) {
+      console.error(
+        "Encyclopedia Search error:",
+        error
       );
 
-    refs.initialState.hidden =
-      true;
+      setSearchStatus(
+        `搜尋失敗：${error.message}`,
+        "error"
+      );
 
-    refs.results.hidden =
-      false;
+      refs.summary.textContent =
+        "搜尋引擎發生錯誤。";
+    }
+  }
 
-    refs.summary.textContent =
-      total
-        ? `找到 ${total.toLocaleString(
-            "zh-TW"
-          )} 筆，第 ${state.page} / ${totalPages} 頁`
-        : createEmptySummary();
+  function executeSearch(
+    offset
+  ) {
+    return searchEngine.search(
+      state.query,
+      {
+        categories:
+          [
+            ...state.categories
+          ],
 
-    renderCards(
-      pageCards
-    );
+        sourceType:
+          state.sourceType,
 
-    renderPagination(
-      totalPages
+        platform:
+          state.platform,
+
+        material:
+          state.material,
+
+        gender:
+          state.gender,
+
+        sort:
+          state.sort,
+
+        offset,
+
+        limit:
+          state.pageSize
+      }
     );
   }
+
+  /* ========================================
+     Facets
+  ======================================== */
+
+  async function refreshFacetOptions() {
+    if (
+      !searchReady
+    ) {
+      return;
+    }
+
+    try {
+      const facets =
+        await searchEngine
+          .getFacets({
+            categories:
+              [
+                ...state.categories
+              ]
+          });
+
+      replaceFacetOptions(
+        refs.material,
+        "全部材質",
+        facets.materials,
+        state.material
+      );
+
+      replaceFacetOptions(
+        refs.gender,
+        "全部性別",
+        facets.genders,
+        state.gender
+      );
+    } catch (error) {
+      console.error(
+        "Facet 更新失敗：",
+        error
+      );
+    }
+  }
+
+  /* ========================================
+     Rendering
+  ======================================== */
 
   function renderInitialState() {
     refs.results.hidden =
@@ -714,7 +1043,7 @@ export function createEncyclopediaController({
         .total
         .toLocaleString(
           "zh-TW"
-        )} 張資料卡。`;
+        )} 張 Card。`;
 
     refs.initialState.innerHTML = `
       <div class="ency-initial-icon">
@@ -722,210 +1051,124 @@ export function createEncyclopediaController({
       </div>
 
       <h3>
-        百科已準備好，但沒有自動倒出全部資料卡
+        百科已準備好，但不會自動倒出全部資料卡
       </h3>
 
       <p>
-        從左側複選分類、輸入搜尋內容，
-        或按「顯示全部資料卡」後才顯示結果。
+        選擇左側分類、輸入搜尋內容，
+        或按「顯示全部資料卡」後，
+        Search Worker 才開始尋找結果。
+      </p>
+    `;
+  }
+
+  function renderSearchLoading() {
+    refs.initialState.hidden =
+      false;
+
+    refs.results.hidden =
+      true;
+
+    refs.pagination.hidden =
+      true;
+
+    refs.initialState.innerHTML = `
+      <div class="ency-initial-icon">
+        ⚡
+      </div>
+
+      <h3>
+        Search Worker 啟動中
+      </h3>
+
+      <p>
+        正在建立 Runtime Index。
       </p>
     `;
   }
 
   function renderCards(
-    cards
+    entries
   ) {
     const fragment =
       document.createDocumentFragment();
 
-    cards.forEach(
-      (card) => {
-        fragment.append(
-          cardSystem
-            .createCardElement(
-              card
-            )
+    if (!entries.length) {
+      const empty =
+        document.createElement(
+          "div"
         );
-      }
-    );
+
+      empty.className =
+        "ency-initial-state";
+
+      empty.innerHTML = `
+        <div class="ency-initial-icon">
+          🍮
+        </div>
+
+        <h3>
+          沒有可顯示的 Card
+        </h3>
+
+        <p>
+          搜尋索引有結果但 Card Chunk 尚未發布，
+          或目前沒有符合條件的資料。
+        </p>
+      `;
+
+      fragment.append(
+        empty
+      );
+    } else {
+      entries.forEach(
+        ({
+          card,
+          hit
+        }) => {
+          const node =
+            cardSystem
+              .createCardElement(
+                card
+              );
+
+          if (
+            state.query &&
+            hit.score
+          ) {
+            const badge =
+              document.createElement(
+                "span"
+              );
+
+            badge.className =
+              "ency-search-score";
+
+            badge.textContent =
+              `相關度 ${Math.round(
+                hit.score
+              )}`;
+
+            node
+              .querySelector(
+                ".card-v1-overline"
+              )
+              ?.append(
+                badge
+              );
+          }
+
+          fragment.append(
+            node
+          );
+        }
+      );
+    }
 
     refs.results
       .replaceChildren(
         fragment
       );
-  }
-
-  function getFilteredCards() {
-    const query =
-      state.query
-        .toLowerCase();
-
-    const cards =
-      registry
-        .getCards({
-          enabledOnly: true
-        })
-        .filter(
-          (card) => {
-            if (
-              state.categories.size &&
-              !state.categories.has(
-                card.category
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              state.sourceType !==
-                "all" &&
-              card.source?.type !==
-                state.sourceType
-            ) {
-              return false;
-            }
-
-            if (
-              state.platform !==
-                "all" &&
-              !card.platforms.includes(
-                state.platform
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              state.material !==
-                "all" &&
-              !hasAttributeValue(
-                card,
-                "material",
-                state.material
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              state.gender !==
-                "all" &&
-              !hasAttributeValue(
-                card,
-                "gender",
-                state.gender
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              query &&
-              !createSearchText(
-                card
-              ).includes(query)
-            ) {
-              return false;
-            }
-
-            return true;
-          }
-        );
-
-    sortCards(cards);
-
-    return cards;
-  }
-
-  function sortCards(cards) {
-    const zh =
-      new Intl.Collator(
-        "zh-Hant"
-      );
-
-    const en =
-      new Intl.Collator(
-        "en"
-      );
-
-    if (
-      state.sort ===
-      "name-zh"
-    ) {
-      cards.sort(
-        (a, b) =>
-          zh.compare(
-            a.nameZh,
-            b.nameZh
-          )
-      );
-
-      return;
-    }
-
-    if (
-      state.sort ===
-      "name-en"
-    ) {
-      cards.sort(
-        (a, b) =>
-          en.compare(
-            a.nameEn,
-            b.nameEn
-          )
-      );
-
-      return;
-    }
-
-    if (
-      state.sort ===
-      "updated"
-    ) {
-      cards.sort(
-        (a, b) =>
-          dateValue(
-            b.metadata
-              ?.updatedAt
-          ) -
-          dateValue(
-            a.metadata
-              ?.updatedAt
-          )
-      );
-
-      return;
-    }
-
-    cards.sort(
-      (a, b) => {
-        const categoryCompare =
-          zh.compare(
-            getCategoryName(
-              a.category
-            ),
-            getCategoryName(
-              b.category
-            )
-          );
-
-        if (
-          state.sort ===
-          "category" &&
-          categoryCompare !== 0
-        ) {
-          return categoryCompare;
-        }
-
-        return (
-          categoryCompare ||
-          zh.compare(
-            a.nameZh,
-            b.nameZh
-          )
-        );
-      }
-    );
   }
 
   function renderCategoryChips() {
@@ -1051,7 +1294,7 @@ export function createEncyclopediaController({
     if (
       refs.query &&
       document.activeElement !==
-      refs.query
+        refs.query
     ) {
       refs.query.value =
         state.query;
@@ -1090,6 +1333,35 @@ export function createEncyclopediaController({
     );
   }
 
+  function setSearchStatus(
+    message,
+    status = ""
+  ) {
+    if (!refs.searchStatus) {
+      return;
+    }
+
+    refs.searchStatus
+      .classList
+      .remove(
+        "is-ready",
+        "is-busy",
+        "is-error"
+      );
+
+    if (status) {
+      refs.searchStatus
+        .classList
+        .add(
+          `is-${status}`
+        );
+    }
+
+    refs.searchStatus
+      .textContent =
+        message;
+  }
+
   function getCategoryName(
     categoryId
   ) {
@@ -1104,12 +1376,14 @@ export function createEncyclopediaController({
   }
 
   function createEmptySummary() {
-    return registry
-      .getCounts()
-      .total
-      ? "沒有符合目前條件的資料卡。"
-      : "Registry 正常，目前尚未載入正式資料卡。";
+    return (
+      "沒有符合目前搜尋與篩選條件的資料卡。"
+    );
   }
+
+  /* ========================================
+     Base UI
+  ======================================== */
 
   function createBaseHtml() {
     return `
@@ -1117,7 +1391,7 @@ export function createEncyclopediaController({
 
         <div>
           <div class="panel-kicker">
-            ENCYCLOPEDIA FILTER
+            ENCYCLOPEDIA SEARCH
           </div>
 
           <h3>
@@ -1125,7 +1399,7 @@ export function createEncyclopediaController({
           </h3>
 
           <p>
-            初始不顯示全部資料卡。
+            Search Worker + Lazy Loading
           </p>
         </div>
 
@@ -1155,14 +1429,14 @@ export function createEncyclopediaController({
 
         <label class="ency-filter-wide">
           <span>
-            關鍵字
+            全文搜尋
           </span>
 
           <input
             type="search"
             autocomplete="off"
             data-ency-filter-query
-            placeholder="名稱、標籤、Prompt…"
+            placeholder="名稱、Prompt、標籤、材質…"
           >
         </label>
 
@@ -1259,7 +1533,7 @@ export function createEncyclopediaController({
             data-ency-filter-sort
           >
             <option value="default">
-              預設排序
+              相關度／預設
             </option>
 
             <option value="name-zh">
@@ -1325,6 +1599,13 @@ export function createEncyclopediaController({
       </div>
 
       <div
+        class="ency-search-status"
+        data-ency-search-status
+      >
+        Search Worker 尚未啟動
+      </div>
+
+      <div
         class="ency-result-summary"
         data-ency-summary
       ></div>
@@ -1344,6 +1625,7 @@ export function createEncyclopediaController({
         class="ency-pagination"
         data-ency-pagination
         hidden
+        aria-label="百科分頁"
       ></nav>
     `;
   }
@@ -1357,6 +1639,7 @@ export function createEncyclopediaController({
 
     refresh() {
       refreshFacetOptions();
+
       render();
     },
 
@@ -1385,53 +1668,6 @@ export function createEncyclopediaController({
    Helpers
 ============================================ */
 
-function collectAttributeValues(
-  cards,
-  attributeId
-) {
-  const values =
-    new Map();
-
-  cards.forEach(
-    (card) => {
-      (
-        card.attributes?.[
-          attributeId
-        ] ||
-        []
-      ).forEach(
-        (option) => {
-          const label =
-            String(
-              option.nameZh ||
-              option.nameEn ||
-              ""
-            ).trim();
-
-          if (!label) {
-            return;
-          }
-
-          values.set(
-            label.toLowerCase(),
-            label
-          );
-        }
-      );
-    }
-  );
-
-  return [
-    ...values.values()
-  ].sort(
-    (a, b) =>
-      a.localeCompare(
-        b,
-        "zh-Hant"
-      )
-  );
-}
-
 function replaceFacetOptions(
   select,
   allLabel,
@@ -1449,7 +1685,11 @@ function replaceFacetOptions(
       )}
     </option>
 
-    ${values
+    ${(
+      Array.isArray(values)
+        ? values
+        : []
+    )
       .map(
         (value) => `
           <option
@@ -1495,93 +1735,6 @@ function setSelect(
       : "all";
 }
 
-function hasAttributeValue(
-  card,
-  attributeId,
-  targetValue
-) {
-  const target =
-    String(targetValue)
-      .trim()
-      .toLowerCase();
-
-  return (
-    card.attributes?.[
-      attributeId
-    ] ||
-    []
-  ).some(
-    (option) =>
-      [
-        option.id,
-        option.nameZh,
-        option.nameEn
-      ]
-        .filter(Boolean)
-        .some(
-          (value) =>
-            String(value)
-              .trim()
-              .toLowerCase() ===
-            target
-        )
-  );
-}
-
-function createSearchText(
-  card
-) {
-  return [
-    card.id,
-    card.nameZh,
-    card.nameEn,
-    card.descriptionZh,
-    card.descriptionEn,
-    card.subcategory,
-
-    ...(card.tags || []),
-
-    ...(card.prompt?.positive || []),
-
-    ...(card.prompt?.negative || []),
-
-    ...(card.colorways || [])
-      .flatMap(
-        (colorway) => [
-          colorway.nameZh,
-          colorway.nameEn,
-          ...(colorway.prompt || []),
-
-          ...(colorway.palette || [])
-            .flatMap(
-              (color) => [
-                color.nameZh,
-                color.nameEn
-              ]
-            )
-        ]
-      ),
-
-    ...Object
-      .values(
-        card.attributes ||
-        {}
-      )
-      .flat()
-      .flatMap(
-        (option) => [
-          option.id,
-          option.nameZh,
-          option.nameEn,
-          option.prompt
-        ]
-      )
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
 function createPageNumbers(
   current,
   total
@@ -1611,24 +1764,30 @@ function createPageNumbers(
   return output;
 }
 
-function dateValue(value) {
-  const result =
-    new Date(
-      value || 0
-    ).getTime();
-
-  return Number.isFinite(
-    result
+function escapeHtml(
+  value
+) {
+  return String(
+    value ?? ""
   )
-    ? result
-    : 0;
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
