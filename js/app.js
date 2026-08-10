@@ -3,13 +3,16 @@
 import {
   APP,
   MODULES,
-  CATEGORY_GROUPS,
   MODULE_PLACEHOLDERS
 } from "./core/config.js";
 
 import {
   registry
 } from "./core/registry.js";
+
+import {
+  createEncyclopediaController
+} from "./modules/encyclopedia.js";
 
 const state = {
   openModules:
@@ -23,6 +26,12 @@ const state = {
 };
 
 const dom = {};
+
+const moduleNodes =
+  new Map();
+
+const moduleControllers =
+  new Map();
 
 boot();
 
@@ -47,9 +56,13 @@ function boot() {
 
 async function initialize() {
   cacheDom();
+
   applyAppMetadata();
+
   renderNavigation();
-  renderCategoryTree();
+
+  renderCategoryLoading();
+
   bindEvents();
 
   updateStatistics();
@@ -57,12 +70,14 @@ async function initialize() {
   try {
     await initializeRegistry();
 
+    renderCategoryTree();
+
     console.info(
-      `🍮 ${APP.nameEn} v${APP.version} — Step 02 ready`
+      `🍮 ${APP.nameEn} v${APP.version} — Step 03 ready`
     );
   } catch (error) {
     console.error(
-      "🍮 Step 02 Registry 初始化失敗：",
+      "🍮 Registry 初始化失敗：",
       error
     );
 
@@ -72,6 +87,10 @@ async function initialize() {
   }
 }
 
+/* ============================================
+   Registry
+============================================ */
+
 async function initializeRegistry() {
   registry.subscribe(
     (
@@ -80,6 +99,11 @@ async function initializeRegistry() {
     ) => {
       updateStatistics(
         snapshot
+      );
+
+      updateCategoryCounts(
+        snapshot.counts
+          .categories
       );
 
       console.debug(
@@ -107,10 +131,6 @@ async function initializeRegistry() {
 }
 
 function exposeDebugApi() {
-  /*
-   * 只做開發期檢查。
-   * 不讓 UI 模組靠這個全域物件互相傳資料。
-   */
   window.TWO_Y_V1 =
     Object.freeze({
       version:
@@ -119,6 +139,10 @@ function exposeDebugApi() {
       registry
     });
 }
+
+/* ============================================
+   DOM
+============================================ */
 
 function cacheDom() {
   dom.topNavigation =
@@ -136,14 +160,14 @@ function cacheDom() {
       "#beforeBuilderZone"
     );
 
-  dom.afterBuilderZone =
-    document.querySelector(
-      "#afterBuilderZone"
-    );
-
   dom.promptBuilderZone =
     document.querySelector(
       "#promptBuilderZone"
+    );
+
+  dom.afterBuilderZone =
+    document.querySelector(
+      "#afterBuilderZone"
     );
 
   dom.sidebar =
@@ -203,106 +227,302 @@ function applyAppMetadata() {
       }
     );
 
-  document
-    .querySelectorAll(
-      "[data-preset-target]"
-    )
-    .forEach(
-      (element) => {
-        element.textContent =
-          APP.presetTarget
-            .toLocaleString(
-              "zh-TW"
-            );
-      }
-    );
-
   document.documentElement
     .dataset.appVersion =
       APP.version;
 }
 
-function renderNavigation() {
-  dom.topNavigation.innerHTML = `
-    <button
-      class="nav-button is-active"
-      type="button"
-      data-home
-    >
-      🏠 首頁
-    </button>
+/* ============================================
+   Navigation
+============================================ */
 
-    ${MODULES.map(
-      (module) => `
-        <button
-          class="nav-button"
-          type="button"
-          data-module="${escapeHtml(
-            module.id
-          )}"
-        >
-          ${module.icon}
-          ${escapeHtml(
-            module.label
-          )}
-        </button>
-      `
-    ).join("")}
+function renderNavigation() {
+  const fragment =
+    document.createDocumentFragment();
+
+  const homeButton =
+    document.createElement(
+      "button"
+    );
+
+  homeButton.type =
+    "button";
+
+  homeButton.className =
+    "nav-button is-active";
+
+  homeButton.dataset.home =
+    "";
+
+  homeButton.textContent =
+    "🏠 首頁";
+
+  fragment.append(
+    homeButton
+  );
+
+  MODULES.forEach(
+    (module) => {
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.type =
+        "button";
+
+      button.className =
+        "nav-button";
+
+      button.dataset.module =
+        module.id;
+
+      button.textContent =
+        `${module.icon} ${module.label}`;
+
+      fragment.append(
+        button
+      );
+    }
+  );
+
+  dom.topNavigation
+    .replaceChildren(
+      fragment
+    );
+}
+
+function updateNavigation() {
+  document
+    .querySelectorAll(
+      "[data-module]"
+    )
+    .forEach(
+      (button) => {
+        button.classList.toggle(
+          "is-active",
+
+          state.openModules.has(
+            button.dataset.module
+          )
+        );
+      }
+    );
+
+  document
+    .querySelector(
+      "[data-home]"
+    )
+    ?.classList.toggle(
+      "is-active",
+
+      state.openModules
+        .size === 0
+    );
+}
+
+/* ============================================
+   Taxonomy Sidebar
+============================================ */
+
+function renderCategoryLoading() {
+  dom.categoryTree.innerHTML = `
+    <div class="module-placeholder">
+      分類資料載入中…
+    </div>
   `;
 }
 
 function renderCategoryTree() {
-  dom.categoryTree.innerHTML =
-    CATEGORY_GROUPS.map(
+  const taxonomy =
+    registry.taxonomy;
+
+  const categories =
+    new Map(
       (
-        group,
-        index
-      ) => `
-        <details
-          class="category-group"
-          ${
-            index < 2
-              ? "open"
-              : ""
+        taxonomy?.categories ||
+        []
+      ).map(
+        (category) => [
+          category.id,
+          category
+        ]
+      )
+    );
+
+  const fragment =
+    document.createDocumentFragment();
+
+  (
+    taxonomy?.groups ||
+    []
+  ).forEach(
+    (
+      group,
+      index
+    ) => {
+      const details =
+        document.createElement(
+          "details"
+        );
+
+      details.className =
+        "category-group";
+
+      details.open =
+        index < 2;
+
+      const summary =
+        document.createElement(
+          "summary"
+        );
+
+      summary.innerHTML = `
+        <span>
+          ${escapeHtml(
+            group.icon ||
+            "◆"
+          )}
+        </span>
+
+        <strong>
+          ${escapeHtml(
+            group.nameZh
+          )}
+        </strong>
+      `;
+
+      details.append(
+        summary
+      );
+
+      const items =
+        document.createElement(
+          "div"
+        );
+
+      items.className =
+        "category-items";
+
+      (
+        group.categories ||
+        []
+      ).forEach(
+        (categoryId) => {
+          const category =
+            categories.get(
+              categoryId
+            );
+
+          if (!category) {
+            return;
           }
-        >
-          <summary>
+
+          const button =
+            document.createElement(
+              "button"
+            );
+
+          button.type =
+            "button";
+
+          button.className =
+            "category-button";
+
+          button.dataset.categoryId =
+            category.id;
+
+          button.innerHTML = `
             <span>
-              ${group.icon}
+              ${escapeHtml(
+                category.nameZh
+              )}
             </span>
 
-            <strong>
-              ${escapeHtml(
-                group.label
-              )}
-            </strong>
-          </summary>
+            <small
+              data-category-count="${escapeHtml(
+                category.id
+              )}"
+            >
+              0
+            </small>
+          `;
 
-          <div
-            class="category-items"
-          >
-            ${group.categories
-              .map(
-                (category) => `
-                  <button
-                    class="category-button"
-                    type="button"
-                    data-category="${escapeHtml(
-                      category
-                    )}"
-                  >
-                    ${escapeHtml(
-                      category
-                    )}
-                  </button>
-                `
-              )
-              .join("")}
-          </div>
-        </details>
-      `
-    ).join("");
+          items.append(
+            button
+          );
+        }
+      );
+
+      details.append(
+        items
+      );
+
+      fragment.append(
+        details
+      );
+    }
+  );
+
+  dom.categoryTree
+    .replaceChildren(
+      fragment
+    );
+
+  updateCategoryButtons();
+
+  updateCategoryCounts(
+    registry.getCounts()
+      .categories
+  );
 }
+
+function updateCategoryCounts(
+  counts = {}
+) {
+  document
+    .querySelectorAll(
+      "[data-category-count]"
+    )
+    .forEach(
+      (element) => {
+        element.textContent =
+          Number(
+            counts[
+              element.dataset
+                .categoryCount
+            ] ||
+            0
+          ).toLocaleString(
+            "zh-TW"
+          );
+      }
+    );
+}
+
+function updateCategoryButtons() {
+  document
+    .querySelectorAll(
+      "[data-category-id]"
+    )
+    .forEach(
+      (button) => {
+        button.classList.toggle(
+          "is-active",
+
+          state.activeCategories
+            .has(
+              button.dataset
+                .categoryId
+            )
+        );
+      }
+    );
+}
+
+/* ============================================
+   Events
+============================================ */
 
 function bindEvents() {
   document.addEventListener(
@@ -313,7 +533,7 @@ function bindEvents() {
   dom.globalSearch
     ?.addEventListener(
       "input",
-      handleSearchInput
+      handleGlobalSearch
     );
 
   dom.menuButton
@@ -321,8 +541,7 @@ function bindEvents() {
       "click",
       () => {
         dom.topNavigation
-          .classList
-          .toggle(
+          .classList.toggle(
             "is-open"
           );
       }
@@ -333,8 +552,7 @@ function bindEvents() {
       "click",
       () => {
         dom.sidebar
-          .classList
-          .toggle(
+          .classList.toggle(
             "is-open"
           );
       }
@@ -364,12 +582,11 @@ function handleDocumentClick(
     return;
   }
 
-  const homeButton =
+  if (
     target.closest(
       "[data-home]"
-    );
-
-  if (homeButton) {
+    )
+  ) {
     goHome();
     return;
   }
@@ -381,8 +598,7 @@ function handleDocumentClick(
 
   if (moduleButton) {
     toggleModule(
-      moduleButton
-        .dataset
+      moduleButton.dataset
         .module
     );
 
@@ -391,14 +607,13 @@ function handleDocumentClick(
 
   const categoryButton =
     target.closest(
-      "[data-category]"
+      "[data-category-id]"
     );
 
   if (categoryButton) {
     toggleCategory(
-      categoryButton
-        .dataset
-        .category
+      categoryButton.dataset
+        .categoryId
     );
 
     return;
@@ -411,33 +626,60 @@ function handleDocumentClick(
 
   if (closeButton) {
     closeModule(
-      closeButton
-        .dataset
+      closeButton.dataset
         .closeModule
     );
   }
 }
 
+function handleGlobalSearch(
+  event
+) {
+  const query =
+    event.target.value;
+
+  ensureModuleOpen(
+    "encyclopedia"
+  );
+
+  getEncyclopedia()
+    ?.setQuery(query);
+}
+
+/* ============================================
+   Home
+============================================ */
+
 function goHome() {
-  state.openModules
-    .clear();
+  [
+    ...state.openModules
+  ].forEach(
+    (moduleId) => {
+      closeModule(
+        moduleId,
+        false
+      );
+    }
+  );
 
   state.activeCategories
     .clear();
 
-  renderOpenModules();
-  updateNavigation();
+  if (dom.globalSearch) {
+    dom.globalSearch.value =
+      "";
+  }
+
   updateCategoryButtons();
+  updateNavigation();
 
   dom.topNavigation
-    .classList
-    .remove(
+    .classList.remove(
       "is-open"
     );
 
   dom.sidebar
-    .classList
-    .remove(
+    .classList.remove(
       "is-open"
     );
 
@@ -447,8 +689,48 @@ function goHome() {
   });
 }
 
+/* ============================================
+   Module Manager
+============================================ */
+
 function toggleModule(
   moduleId
+) {
+  if (
+    state.openModules.has(
+      moduleId
+    )
+  ) {
+    closeModule(
+      moduleId
+    );
+
+    return;
+  }
+
+  openModule(
+    moduleId
+  );
+}
+
+function ensureModuleOpen(
+  moduleId
+) {
+  if (
+    !state.openModules.has(
+      moduleId
+    )
+  ) {
+    openModule(
+      moduleId,
+      false
+    );
+  }
+}
+
+function openModule(
+  moduleId,
+  scroll = true
 ) {
   const module =
     MODULES.find(
@@ -457,422 +739,358 @@ function toggleModule(
         moduleId
     );
 
-  if (!module) {
+  if (
+    !module ||
+    state.openModules.has(
+      moduleId
+    )
+  ) {
     return;
   }
 
-  if (
-    state.openModules
-      .has(moduleId)
-  ) {
-    state.openModules
-      .delete(
-        moduleId
-      );
-  } else {
-    state.openModules
-      .add(
-        moduleId
-      );
-  }
+  state.openModules.add(
+    moduleId
+  );
 
-  renderOpenModules();
+  const node =
+    createModuleNode(
+      module
+    );
+
+  moduleNodes.set(
+    moduleId,
+    node
+  );
+
+  insertModuleNode(
+    module,
+    node
+  );
+
+  mountModuleContent(
+    module,
+    node
+  );
+
   updateNavigation();
 
   dom.topNavigation
-    .classList
-    .remove(
+    .classList.remove(
       "is-open"
     );
 
-  window
-    .requestAnimationFrame(
+  if (scroll) {
+    window.requestAnimationFrame(
       () => {
-        document
-          .querySelector(
-            `[data-module-panel="${cssEscape(
-              moduleId
-            )}"]`
-          )
-          ?.scrollIntoView({
-            behavior:
-              "smooth",
-
-            block:
-              "nearest"
-          });
+        node.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
       }
     );
+  }
 }
 
 function closeModule(
-  moduleId
+  moduleId,
+  update = true
 ) {
-  state.openModules
-    .delete(
-      moduleId
-    );
-
-  renderOpenModules();
-  updateNavigation();
-}
-
-function toggleCategory(
-  categoryLabel
-) {
-  const categoryId =
-    registry.resolveCategory(
-      categoryLabel
-    );
-
-  /*
-   * Step 02 已開始使用穩定 Category ID。
-   * Registry 尚未完成時才暫時使用文字。
-   */
-  const categoryKey =
-    categoryId ||
-    categoryLabel;
-
   if (
-    state.activeCategories
-      .has(categoryKey)
+    !state.openModules.has(
+      moduleId
+    )
   ) {
-    state.activeCategories
-      .delete(
-        categoryKey
-      );
-  } else {
-    state.activeCategories
-      .add(
-        categoryKey
-      );
+    return;
   }
 
-  state.openModules
-    .add(
-      "encyclopedia"
+  moduleControllers
+    .get(moduleId)
+    ?.destroy?.();
+
+  moduleControllers.delete(
+    moduleId
+  );
+
+  moduleNodes
+    .get(moduleId)
+    ?.remove();
+
+  moduleNodes.delete(
+    moduleId
+  );
+
+  state.openModules.delete(
+    moduleId
+  );
+
+  if (update) {
+    updateNavigation();
+  }
+}
+
+function createModuleNode(
+  module
+) {
+  const section =
+    document.createElement(
+      "section"
     );
 
-  renderOpenModules();
-  updateNavigation();
+  section.className =
+    "panel module-panel";
+
+  section.dataset.modulePanel =
+    module.id;
+
+  section.innerHTML = `
+    <div class="panel-inner">
+
+      <div class="module-panel-header">
+
+        <div>
+          <div class="panel-kicker">
+            ${escapeHtml(
+              module.id
+            )}
+          </div>
+
+          <h2>
+            ${module.icon}
+            ${escapeHtml(
+              module.label
+            )}
+          </h2>
+        </div>
+
+        <button
+          class="module-close"
+          type="button"
+          data-close-module="${escapeHtml(
+            module.id
+          )}"
+          aria-label="關閉 ${escapeHtml(
+            module.label
+          )}"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div
+        data-module-mount="${escapeHtml(
+          module.id
+        )}"
+      ></div>
+
+    </div>
+  `;
+
+  return section;
+}
+
+function insertModuleNode(
+  module,
+  node
+) {
+  const zone =
+    getZone(
+      module.area
+    );
+
+  const currentIndex =
+    MODULES.findIndex(
+      (item) =>
+        item.id ===
+        module.id
+    );
+
+  const nextNode =
+    [...zone.children]
+      .find(
+        (child) => {
+          const nextIndex =
+            MODULES.findIndex(
+              (item) =>
+                item.id ===
+                child.dataset
+                  .modulePanel
+            );
+
+          return (
+            nextIndex >
+            currentIndex
+          );
+        }
+      );
+
+  zone.insertBefore(
+    node,
+    nextNode ||
+    null
+  );
+}
+
+function getZone(
+  area
+) {
+  if (
+    area === "builder"
+  ) {
+    return dom
+      .promptBuilderZone;
+  }
+
+  if (
+    area === "after"
+  ) {
+    return dom
+      .afterBuilderZone;
+  }
+
+  return dom
+    .beforeBuilderZone;
+}
+
+function mountModuleContent(
+  module,
+  node
+) {
+  const mount =
+    node.querySelector(
+      "[data-module-mount]"
+    );
+
+  if (
+    module.id ===
+    "encyclopedia"
+  ) {
+    const controller =
+      createEncyclopediaController({
+        registry,
+
+        onCategoriesChange:
+          (categories) => {
+            state.activeCategories =
+              new Set(
+                categories
+              );
+
+            updateCategoryButtons();
+          },
+
+        onQueryChange:
+          (query) => {
+            if (
+              dom.globalSearch &&
+              dom.globalSearch.value !==
+                query
+            ) {
+              dom.globalSearch.value =
+                query;
+            }
+          }
+      });
+
+    controller.mount(
+      mount
+    );
+
+    controller.setCategories(
+      [
+        ...state
+          .activeCategories
+      ]
+    );
+
+    moduleControllers.set(
+      module.id,
+      controller
+    );
+
+    return;
+  }
+
+  mount.innerHTML = `
+    <div class="module-placeholder">
+
+      <span class="module-status">
+        v1.0.0
+      </span>
+
+      <p>
+        ${escapeHtml(
+          MODULE_PLACEHOLDERS[
+            module.id
+          ] ||
+          "模組入口已建立。"
+        )}
+      </p>
+
+    </div>
+  `;
+}
+
+function getEncyclopedia() {
+  return moduleControllers
+    .get(
+      "encyclopedia"
+    );
+}
+
+/* ============================================
+   Categories
+============================================ */
+
+function toggleCategory(
+  categoryId
+) {
+  const resolved =
+    registry.resolveCategory(
+      categoryId
+    );
+
+  if (!resolved) {
+    return;
+  }
+
+  if (
+    state.activeCategories.has(
+      resolved
+    )
+  ) {
+    state.activeCategories.delete(
+      resolved
+    );
+  } else {
+    state.activeCategories.add(
+      resolved
+    );
+  }
+
+  ensureModuleOpen(
+    "encyclopedia"
+  );
+
+  getEncyclopedia()
+    ?.setCategories(
+      [
+        ...state
+          .activeCategories
+      ]
+    );
+
   updateCategoryButtons();
 
   dom.sidebar
-    .classList
-    .remove(
+    .classList.remove(
       "is-open"
     );
-
-  renderEncyclopediaPlaceholder();
 }
 
-function renderEncyclopediaPlaceholder() {
-  const placeholder =
-    document.querySelector(
-      '[data-module-panel="encyclopedia"] .module-placeholder'
-    );
-
-  if (!placeholder) {
-    return;
-  }
-
-  const selected =
-    [
-      ...state.activeCategories
-    ];
-
-  const labels =
-    selected.map(
-      (categoryId) => {
-        return (
-          registry.getCategory(
-            categoryId
-          )?.nameZh ||
-          categoryId
-        );
-      }
-    );
-
-  placeholder.innerHTML = `
-    <span
-      class="module-status"
-    >
-      STEP 02
-    </span>
-
-    <h3>
-      Registry 已接管分類
-    </h3>
-
-    <p>
-      ${
-        labels.length
-          ? labels
-              .map(
-                (item) =>
-                  `「${escapeHtml(
-                    item
-                  )}」`
-              )
-              .join("＋")
-          : "尚未選擇分類"
-      }
-    </p>
-
-    <p>
-      目前分類已不再依賴中文名稱作為資料 ID。
-      真正百科資料瀏覽會在 Step 03 接上。
-    </p>
-  `;
-}
-
-function handleSearchInput(
-  event
-) {
-  const query =
-    event.target
-      .value
-      .trim();
-
-  if (!query) {
-    return;
-  }
-
-  state.openModules
-    .add(
-      "encyclopedia"
-    );
-
-  renderOpenModules();
-  updateNavigation();
-
-  const placeholder =
-    document.querySelector(
-      '[data-module-panel="encyclopedia"] .module-placeholder'
-    );
-
-  if (placeholder) {
-    placeholder.innerHTML = `
-      <span
-        class="module-status"
-      >
-        SEARCH PLACEHOLDER
-      </span>
-
-      <h3>
-        搜尋：
-        ${escapeHtml(
-          query
-        )}
-      </h3>
-
-      <p>
-        Step 02 只完成資料架構。
-        真正全文索引仍會在 Step 05 製作。
-      </p>
-    `;
-  }
-}
-
-function renderOpenModules() {
-  const beforeModules =
-    MODULES.filter(
-      (module) =>
-        module.area ===
-          "before" &&
-        state.openModules
-          .has(
-            module.id
-          )
-    );
-
-  const builderModules =
-    MODULES.filter(
-      (module) =>
-        module.area ===
-          "builder" &&
-        state.openModules
-          .has(
-            module.id
-          )
-    );
-
-  const afterModules =
-    MODULES.filter(
-      (module) =>
-        module.area ===
-          "after" &&
-        state.openModules
-          .has(
-            module.id
-          )
-    );
-
-  dom.beforeBuilderZone
-    .innerHTML =
-      beforeModules
-        .map(
-          createModulePanel
-        )
-        .join("");
-
-  dom.promptBuilderZone
-    .innerHTML =
-      builderModules
-        .map(
-          createModulePanel
-        )
-        .join("");
-
-  dom.afterBuilderZone
-    .innerHTML =
-      afterModules
-        .map(
-          createModulePanel
-        )
-        .join("");
-}
-
-function createModulePanel(
-  module
-) {
-  return `
-    <section
-      class="panel module-panel"
-      data-module-panel="${escapeHtml(
-        module.id
-      )}"
-    >
-      <div
-        class="panel-inner"
-      >
-        <div
-          class="module-panel-header"
-        >
-          <div>
-            <div
-              class="panel-kicker"
-            >
-              ${escapeHtml(
-                module.id
-              )}
-            </div>
-
-            <h2>
-              ${module.icon}
-              ${escapeHtml(
-                module.label
-              )}
-            </h2>
-          </div>
-
-          <button
-            class="module-close"
-            type="button"
-            data-close-module="${escapeHtml(
-              module.id
-            )}"
-            aria-label="關閉 ${escapeHtml(
-              module.label
-            )}"
-          >
-            ×
-          </button>
-        </div>
-
-        <div
-          class="module-placeholder"
-        >
-          <span
-            class="module-status"
-          >
-            STEP 02
-          </span>
-
-          <p>
-            ${escapeHtml(
-              MODULE_PLACEHOLDERS[
-                module.id
-              ] ??
-              "模組入口已建立。"
-            )}
-          </p>
-        </div>
-      </div>
-    </section>
-  `;
-}
-
-function updateNavigation() {
-  document
-    .querySelectorAll(
-      "[data-module]"
-    )
-    .forEach(
-      (button) => {
-        button
-          .classList
-          .toggle(
-            "is-active",
-
-            state
-              .openModules
-              .has(
-                button
-                  .dataset
-                  .module
-              )
-          );
-      }
-    );
-
-  const homeButton =
-    document.querySelector(
-      "[data-home]"
-    );
-
-  homeButton
-    ?.classList
-    .toggle(
-      "is-active",
-      state.openModules
-        .size === 0
-    );
-}
-
-function updateCategoryButtons() {
-  document
-    .querySelectorAll(
-      "[data-category]"
-    )
-    .forEach(
-      (button) => {
-        const categoryId =
-          registry
-            .resolveCategory(
-              button
-                .dataset
-                .category
-            );
-
-        const key =
-          categoryId ||
-          button
-            .dataset
-            .category;
-
-        button
-          .classList
-          .toggle(
-            "is-active",
-
-            state
-              .activeCategories
-              .has(key)
-          );
-      }
-    );
-}
+/* ============================================
+   Statistics
+============================================ */
 
 function updateStatistics(
   snapshot =
@@ -881,7 +1099,8 @@ function updateStatistics(
       : null
 ) {
   const counts =
-    snapshot?.counts || {
+    snapshot?.counts ||
+    {
       official: 0,
       custom: 0,
       external: 0,
@@ -891,15 +1110,19 @@ function updateStatistics(
 
   setText(
     "#statOfficial",
-    `${counts.official.toLocaleString(
-      "zh-TW"
-    )} / ${counts.target.toLocaleString(
-      "zh-TW"
-    )}`
+
+    `${counts.official
+      .toLocaleString(
+        "zh-TW"
+      )} / ${counts.target
+      .toLocaleString(
+        "zh-TW"
+      )}`
   );
 
   setText(
     "#statCustom",
+
     counts.custom
       .toLocaleString(
         "zh-TW"
@@ -908,6 +1131,7 @@ function updateStatistics(
 
   setText(
     "#statExternal",
+
     counts.external
       .toLocaleString(
         "zh-TW"
@@ -943,27 +1167,28 @@ function updateRegistryStatus(
   document.documentElement
     .dataset.officialCards =
       String(
-        snapshot
-          .counts
+        snapshot.counts
           .official
       );
 
   document.documentElement
     .dataset.customCards =
       String(
-        snapshot
-          .counts
+        snapshot.counts
           .custom
       );
 
   document.documentElement
     .dataset.externalCards =
       String(
-        snapshot
-          .counts
+        snapshot.counts
           .external
       );
 }
+
+/* ============================================
+   Error
+============================================ */
 
 function showRegistryError(
   error
@@ -990,12 +1215,9 @@ function showRegistryError(
     "panel";
 
   panel.innerHTML = `
-    <div
-      class="panel-inner"
-    >
-      <div
-        class="panel-kicker"
-      >
+    <div class="panel-inner">
+
+      <div class="panel-kicker">
         REGISTRY ERROR
       </div>
 
@@ -1010,16 +1232,17 @@ function showRegistryError(
         )}
       </p>
 
-      <p>
-        請確認 taxonomy.json、
-        manifest.json 與
-        card.schema.json 的路徑與 JSON 格式。
-      </p>
     </div>
   `;
 
-  home.append(panel);
+  home.append(
+    panel
+  );
 }
+
+/* ============================================
+   Helpers
+============================================ */
 
 function setText(
   selector,
@@ -1036,31 +1259,10 @@ function setText(
   }
 }
 
-function cssEscape(
-  value
-) {
-  if (
-    window.CSS
-      ?.escape
-  ) {
-    return CSS.escape(
-      value
-    );
-  }
-
-  return String(value)
-    .replaceAll(
-      '"',
-      '\\"'
-    );
-}
-
 function escapeHtml(
   value
 ) {
-  return String(
-    value ?? ""
-  )
+  return String(value ?? "")
     .replaceAll(
       "&",
       "&amp;"
