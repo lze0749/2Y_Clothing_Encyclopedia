@@ -2,38 +2,14 @@
 
 /*
  * 2Y AI Prompt Encyclopedia
- * Encyclopedia Module
- * Step 03
- * App Version: 1.0.0
- *
- * 規則：
- * - Encyclopedia 只管理自己的 DOM。
- * - Filter / Page 改變可以重畫結果區。
- * - Card variant 改變只更新該 Card。
- * - Registry 更新遇到 Card select 正在操作時延後。
+ * Encyclopedia
+ * Step 04 integration
+ * Version: 1.0.0
  */
 
-const PLATFORM_LABELS = Object.freeze({
-  pixai: "PixAI",
-  niji: "Niji",
-  tensorart: "TensorArt",
-  "gpt-image": "GPT Image"
-});
-
-const ATTRIBUTE_LABELS = Object.freeze({
-  material: "材質",
-  fit: "版型",
-  length: "長度",
-  sleeve: "袖型",
-  neckline: "領口",
-  gender: "性別"
-});
-
-const SOURCE_LABELS = Object.freeze({
-  official: "官方預設",
-  custom: "自訂資料",
-  external: "外掛資料"
-});
+import {
+  createCardSystem
+} from "../ui/card.js";
 
 export function createEncyclopediaController({
   registry,
@@ -44,7 +20,8 @@ export function createEncyclopediaController({
     activated: false,
     showAllExplicit: false,
 
-    categories: new Set(),
+    categories:
+      new Set(),
 
     query: "",
 
@@ -54,65 +31,62 @@ export function createEncyclopediaController({
     gender: "all",
 
     sort: "default",
+
     pageSize: 12,
     page: 1
   };
 
-  const cardSelections = new Map();
-
   let host = null;
   let refs = {};
 
-  let unsubscribeRegistry = null;
+  let cardSystem = null;
 
-  let cardControlActive = false;
-  let pendingRegistryRefresh = false;
+  let unsubscribeRegistry =
+    null;
+
+  let cardControlActive =
+    false;
+
+  let pendingRegistryRefresh =
+    false;
 
   function mount(target) {
     host = target;
 
-    host.innerHTML = createBaseHtml();
+    host.innerHTML =
+      createBaseHtml();
 
     cacheRefs();
+
+    cardSystem =
+      createCardSystem({
+        registry,
+        root: host
+      });
+
     bindEvents();
 
     refreshFacetOptions();
+
     render();
 
-    unsubscribeRegistry = registry.subscribe(
-      (message) => {
-        if (
-          ![
-            "cards-updated",
-            "card-removed",
-            "source-cards-removed",
-            "source-status-changed",
-            "source-registered",
-            "source-unregistered"
-          ].includes(message.type)
-        ) {
-          return;
-        }
-
-        if (cardControlActive) {
-          pendingRegistryRefresh = true;
-          return;
-        }
-
-        refreshFacetOptions();
-        render();
-      }
-    );
+    unsubscribeRegistry =
+      registry.subscribe(
+        handleRegistryChange
+      );
   }
 
   function destroy() {
     unsubscribeRegistry?.();
 
-    unsubscribeRegistry = null;
+    unsubscribeRegistry =
+      null;
 
-    if (host) {
-      host.replaceChildren();
-    }
+    cardSystem?.destroy();
+
+    cardSystem = null;
+
+    host?.replaceChildren();
 
     host = null;
     refs = {};
@@ -120,40 +94,64 @@ export function createEncyclopediaController({
 
   function cacheRefs() {
     refs.query =
-      host.querySelector("[data-ency-filter-query]");
+      host.querySelector(
+        "[data-ency-filter-query]"
+      );
 
     refs.source =
-      host.querySelector("[data-ency-filter-source]");
+      host.querySelector(
+        "[data-ency-filter-source]"
+      );
 
     refs.platform =
-      host.querySelector("[data-ency-filter-platform]");
+      host.querySelector(
+        "[data-ency-filter-platform]"
+      );
 
     refs.material =
-      host.querySelector("[data-ency-filter-material]");
+      host.querySelector(
+        "[data-ency-filter-material]"
+      );
 
     refs.gender =
-      host.querySelector("[data-ency-filter-gender]");
+      host.querySelector(
+        "[data-ency-filter-gender]"
+      );
 
     refs.sort =
-      host.querySelector("[data-ency-filter-sort]");
+      host.querySelector(
+        "[data-ency-filter-sort]"
+      );
 
     refs.pageSize =
-      host.querySelector("[data-ency-filter-page-size]");
+      host.querySelector(
+        "[data-ency-filter-page-size]"
+      );
 
     refs.categoryChips =
-      host.querySelector("[data-ency-category-chips]");
+      host.querySelector(
+        "[data-ency-category-chips]"
+      );
 
     refs.summary =
-      host.querySelector("[data-ency-summary]");
+      host.querySelector(
+        "[data-ency-summary]"
+      );
 
     refs.results =
-      host.querySelector("[data-ency-results]");
+      host.querySelector(
+        "[data-ency-results]"
+      );
 
     refs.pagination =
-      host.querySelector("[data-ency-pagination]");
+      host.querySelector(
+        "[data-ency-pagination]"
+      );
 
     refs.initialState =
-      host.querySelector("[data-ency-initial-state]");
+      host.querySelector(
+        "[data-ency-initial-state]"
+      );
   }
 
   function bindEvents() {
@@ -183,24 +181,54 @@ export function createEncyclopediaController({
     );
   }
 
-  function handleFocusIn(event) {
-    const target = event.target;
-
+  function handleRegistryChange(
+    message
+  ) {
     if (
-      target.matches?.(
-        "[data-card-colorway], [data-card-attribute]"
+      ![
+        "cards-updated",
+        "card-removed",
+        "source-cards-removed",
+        "source-status-changed",
+        "source-registered",
+        "source-unregistered"
+      ].includes(
+        message.type
       )
     ) {
-      cardControlActive = true;
+      return;
+    }
+
+    if (cardControlActive) {
+      pendingRegistryRefresh =
+        true;
+
+      return;
+    }
+
+    refreshFacetOptions();
+    render();
+  }
+
+  function handleFocusIn(
+    event
+  ) {
+    if (
+      event.target.matches?.(
+        "[data-card-v1-control]"
+      )
+    ) {
+      cardControlActive =
+        true;
     }
   }
 
-  function handleFocusOut(event) {
-    const target = event.target;
-
+  function handleFocusOut(
+    event
+  ) {
     if (
-      !target.matches?.(
-        "[data-card-colorway], [data-card-attribute]"
+      !event.target.matches?.(
+        "[data-card-v1-control]"
       )
     ) {
       return;
@@ -208,21 +236,23 @@ export function createEncyclopediaController({
 
     window.setTimeout(
       () => {
-        const active =
-          document.activeElement;
-
         if (
-          active?.matches?.(
-            "[data-card-colorway], [data-card-attribute]"
-          )
+          document.activeElement
+            ?.matches?.(
+              "[data-card-v1-control]"
+            )
         ) {
           return;
         }
 
-        cardControlActive = false;
+        cardControlActive =
+          false;
 
-        if (pendingRegistryRefresh) {
-          pendingRegistryRefresh = false;
+        if (
+          pendingRegistryRefresh
+        ) {
+          pendingRegistryRefresh =
+            false;
 
           refreshFacetOptions();
           render();
@@ -232,92 +262,125 @@ export function createEncyclopediaController({
     );
   }
 
-  function handleInput(event) {
+  function handleInput(
+    event
+  ) {
     if (
-      event.target !== refs.query
+      event.target !==
+      refs.query
     ) {
       return;
     }
 
     state.query =
-      event.target.value.trim();
+      event.target.value
+        .trim();
 
     state.page = 1;
 
     if (state.query) {
-      state.activated = true;
+      state.activated =
+        true;
+    } else if (
+      !state.categories.size &&
+      !state.showAllExplicit
+    ) {
+      state.activated =
+        false;
     }
 
-    onQueryChange(state.query);
+    onQueryChange(
+      state.query
+    );
 
     render();
   }
 
-  function handleChange(event) {
-    const target = event.target;
+  function handleChange(
+    event
+  ) {
+    const target =
+      event.target;
 
     /*
-     * Card control：
-     * 絕對不可呼叫 render()。
+     * Card controls 由 Card System 自己管理。
+     * Encyclopedia 不碰。
      */
     if (
       target.matches?.(
-        "[data-card-colorway], [data-card-attribute]"
+        "[data-card-v1-control]"
       )
     ) {
-      updateCardSelection(target);
       return;
     }
 
-    if (target === refs.source) {
+    if (
+      target === refs.source
+    ) {
       state.sourceType =
         target.value;
+
+      state.activated =
+        true;
     }
 
-    if (target === refs.platform) {
+    if (
+      target === refs.platform
+    ) {
       state.platform =
         target.value;
+
+      state.activated =
+        true;
     }
 
-    if (target === refs.material) {
+    if (
+      target === refs.material
+    ) {
       state.material =
         target.value;
+
+      state.activated =
+        true;
     }
 
-    if (target === refs.gender) {
+    if (
+      target === refs.gender
+    ) {
       state.gender =
         target.value;
+
+      state.activated =
+        true;
     }
 
-    if (target === refs.sort) {
+    if (
+      target === refs.sort
+    ) {
       state.sort =
         target.value;
     }
 
-    if (target === refs.pageSize) {
+    if (
+      target === refs.pageSize
+    ) {
       state.pageSize =
-        Number(target.value) || 12;
+        Number(
+          target.value
+        ) || 12;
     }
 
     state.page = 1;
 
-    if (
-      target.matches?.(
-        "[data-ency-filter-source], " +
-        "[data-ency-filter-platform], " +
-        "[data-ency-filter-material], " +
-        "[data-ency-filter-gender]"
-      )
-    ) {
-      state.activated = true;
-    }
-
     render();
   }
 
-  function handleClick(event) {
+  function handleClick(
+    event
+  ) {
     const target =
-      event.target instanceof Element
+      event.target instanceof
+      Element
         ? event.target
         : null;
 
@@ -331,6 +394,7 @@ export function createEncyclopediaController({
       )
     ) {
       showAll();
+
       return;
     }
 
@@ -340,17 +404,18 @@ export function createEncyclopediaController({
       )
     ) {
       clear();
+
       return;
     }
 
-    const removeCategory =
+    const category =
       target.closest(
         "[data-ency-remove-category]"
       );
 
-    if (removeCategory) {
-      removeCategoryFilter(
-        removeCategory.dataset
+    if (category) {
+      removeCategory(
+        category.dataset
           .encyRemoveCategory
       );
 
@@ -378,17 +443,6 @@ export function createEncyclopediaController({
         behavior: "smooth",
         block: "start"
       });
-
-      return;
-    }
-
-    const copyButton =
-      target.closest(
-        "[data-card-copy]"
-      );
-
-    if (copyButton) {
-      copyCardContent(copyButton);
     }
   }
 
@@ -398,20 +452,30 @@ export function createEncyclopediaController({
     state.categories =
       new Set(
         categories
-          .map((value) =>
-            registry.resolveCategory(value)
+          .map(
+            (value) =>
+              registry
+                .resolveCategory(
+                  value
+                )
           )
           .filter(Boolean)
       );
 
-    if (state.categories.size) {
-      state.showAllExplicit = false;
-      state.activated = true;
+    if (
+      state.categories.size
+    ) {
+      state.showAllExplicit =
+        false;
+
+      state.activated =
+        true;
     } else if (
       !state.query &&
       !state.showAllExplicit
     ) {
-      state.activated = false;
+      state.activated =
+        false;
     }
 
     state.page = 1;
@@ -421,7 +485,9 @@ export function createEncyclopediaController({
 
   function setQuery(query) {
     state.query =
-      String(query || "").trim();
+      String(
+        query || ""
+      ).trim();
 
     if (refs.query) {
       refs.query.value =
@@ -429,12 +495,14 @@ export function createEncyclopediaController({
     }
 
     if (state.query) {
-      state.activated = true;
+      state.activated =
+        true;
     } else if (
       !state.categories.size &&
       !state.showAllExplicit
     ) {
-      state.activated = false;
+      state.activated =
+        false;
     }
 
     state.page = 1;
@@ -445,8 +513,12 @@ export function createEncyclopediaController({
   function showAll() {
     state.categories.clear();
 
-    state.showAllExplicit = true;
-    state.activated = true;
+    state.showAllExplicit =
+      true;
+
+    state.activated =
+      true;
+
     state.page = 1;
 
     onCategoriesChange([]);
@@ -455,20 +527,34 @@ export function createEncyclopediaController({
   }
 
   function clear() {
-    state.activated = false;
-    state.showAllExplicit = false;
+    state.activated =
+      false;
+
+    state.showAllExplicit =
+      false;
 
     state.categories.clear();
 
     state.query = "";
 
-    state.sourceType = "all";
-    state.platform = "all";
-    state.material = "all";
-    state.gender = "all";
+    state.sourceType =
+      "all";
 
-    state.sort = "default";
-    state.pageSize = 12;
+    state.platform =
+      "all";
+
+    state.material =
+      "all";
+
+    state.gender =
+      "all";
+
+    state.sort =
+      "default";
+
+    state.pageSize =
+      12;
+
     state.page = 1;
 
     onCategoriesChange([]);
@@ -478,7 +564,7 @@ export function createEncyclopediaController({
     render();
   }
 
-  function removeCategoryFilter(
+  function removeCategory(
     categoryId
   ) {
     state.categories.delete(
@@ -492,11 +578,14 @@ export function createEncyclopediaController({
       !state.query &&
       !state.showAllExplicit
     ) {
-      state.activated = false;
+      state.activated =
+        false;
     }
 
     onCategoriesChange(
-      [...state.categories]
+      [
+        ...state.categories
+      ]
     );
 
     render();
@@ -535,47 +624,50 @@ export function createEncyclopediaController({
     }
 
     syncControls();
+
     renderCategoryChips();
 
     if (!state.activated) {
       renderInitialState();
+
       return;
     }
 
-    const all =
+    const filtered =
       getFilteredCards();
 
     const total =
-      all.length;
-
-    const pageSize =
-      state.pageSize;
+      filtered.length;
 
     const totalPages =
       Math.max(
         1,
         Math.ceil(
-          total / pageSize
+          total /
+          state.pageSize
         )
       );
 
     state.page =
       Math.min(
         Math.max(
-          state.page,
-          1
+          1,
+          state.page
         ),
         totalPages
       );
 
     const start =
-      (state.page - 1) *
-      pageSize;
+      (
+        state.page - 1
+      ) *
+      state.pageSize;
 
-    const cards =
-      all.slice(
+    const pageCards =
+      filtered.slice(
         start,
-        start + pageSize
+        start +
+        state.pageSize
       );
 
     refs.initialState.hidden =
@@ -591,7 +683,9 @@ export function createEncyclopediaController({
           )} 筆，第 ${state.page} / ${totalPages} 頁`
         : createEmptySummary();
 
-    renderCards(cards);
+    renderCards(
+      pageCards
+    );
 
     renderPagination(
       totalPages
@@ -602,12 +696,14 @@ export function createEncyclopediaController({
     refs.results.hidden =
       true;
 
-    refs.results.replaceChildren();
+    refs.results
+      .replaceChildren();
 
     refs.pagination.hidden =
       true;
 
-    refs.pagination.replaceChildren();
+    refs.pagination
+      .replaceChildren();
 
     refs.initialState.hidden =
       false;
@@ -615,7 +711,8 @@ export function createEncyclopediaController({
     refs.summary.textContent =
       `Registry 已連線，目前載入 ${registry
         .getCounts()
-        .total.toLocaleString(
+        .total
+        .toLocaleString(
           "zh-TW"
         )} 張資料卡。`;
 
@@ -629,84 +726,111 @@ export function createEncyclopediaController({
       </h3>
 
       <p>
-        從左側選擇一個或多個分類、
-        使用搜尋，或按「顯示全部資料卡」。
+        從左側複選分類、輸入搜尋內容，
+        或按「顯示全部資料卡」後才顯示結果。
       </p>
     `;
   }
 
-  function getFilteredCards() {
-    let cards =
-      registry.getCards({
-        enabledOnly: true
-      });
+  function renderCards(
+    cards
+  ) {
+    const fragment =
+      document.createDocumentFragment();
 
+    cards.forEach(
+      (card) => {
+        fragment.append(
+          cardSystem
+            .createCardElement(
+              card
+            )
+        );
+      }
+    );
+
+    refs.results
+      .replaceChildren(
+        fragment
+      );
+  }
+
+  function getFilteredCards() {
     const query =
       state.query
         .toLowerCase();
 
-    cards =
-      cards.filter(
-        (card) => {
-          if (
-            state.categories.size &&
-            !state.categories.has(
-              card.category
-            )
-          ) {
-            return false;
-          }
+    const cards =
+      registry
+        .getCards({
+          enabledOnly: true
+        })
+        .filter(
+          (card) => {
+            if (
+              state.categories.size &&
+              !state.categories.has(
+                card.category
+              )
+            ) {
+              return false;
+            }
 
-          if (
-            state.sourceType !== "all" &&
-            card.source?.type !==
-              state.sourceType
-          ) {
-            return false;
-          }
+            if (
+              state.sourceType !==
+                "all" &&
+              card.source?.type !==
+                state.sourceType
+            ) {
+              return false;
+            }
 
-          if (
-            state.platform !== "all" &&
-            !card.platforms.includes(
-              state.platform
-            )
-          ) {
-            return false;
-          }
+            if (
+              state.platform !==
+                "all" &&
+              !card.platforms.includes(
+                state.platform
+              )
+            ) {
+              return false;
+            }
 
-          if (
-            state.material !== "all" &&
-            !hasAttributeValue(
-              card,
-              "material",
-              state.material
-            )
-          ) {
-            return false;
-          }
+            if (
+              state.material !==
+                "all" &&
+              !hasAttributeValue(
+                card,
+                "material",
+                state.material
+              )
+            ) {
+              return false;
+            }
 
-          if (
-            state.gender !== "all" &&
-            !hasAttributeValue(
-              card,
-              "gender",
-              state.gender
-            )
-          ) {
-            return false;
-          }
+            if (
+              state.gender !==
+                "all" &&
+              !hasAttributeValue(
+                card,
+                "gender",
+                state.gender
+              )
+            ) {
+              return false;
+            }
 
-          if (
-            query &&
-            !createSearchText(card)
-              .includes(query)
-          ) {
-            return false;
-          }
+            if (
+              query &&
+              !createSearchText(
+                card
+              ).includes(query)
+            ) {
+              return false;
+            }
 
-          return true;
-        }
-      );
+            return true;
+          }
+        );
 
     sortCards(cards);
 
@@ -714,12 +838,12 @@ export function createEncyclopediaController({
   }
 
   function sortCards(cards) {
-    const collatorZh =
+    const zh =
       new Intl.Collator(
         "zh-Hant"
       );
 
-    const collatorEn =
+    const en =
       new Intl.Collator(
         "en"
       );
@@ -730,7 +854,7 @@ export function createEncyclopediaController({
     ) {
       cards.sort(
         (a, b) =>
-          collatorZh.compare(
+          zh.compare(
             a.nameZh,
             b.nameZh
           )
@@ -745,32 +869,9 @@ export function createEncyclopediaController({
     ) {
       cards.sort(
         (a, b) =>
-          collatorEn.compare(
+          en.compare(
             a.nameEn,
             b.nameEn
-          )
-      );
-
-      return;
-    }
-
-    if (
-      state.sort ===
-      "category"
-    ) {
-      cards.sort(
-        (a, b) =>
-          collatorZh.compare(
-            getCategoryName(
-              a.category
-            ),
-            getCategoryName(
-              b.category
-            )
-          ) ||
-          collatorZh.compare(
-            a.nameZh,
-            b.nameZh
           )
       );
 
@@ -784,10 +885,12 @@ export function createEncyclopediaController({
       cards.sort(
         (a, b) =>
           dateValue(
-            b.metadata?.updatedAt
+            b.metadata
+              ?.updatedAt
           ) -
           dateValue(
-            a.metadata?.updatedAt
+            a.metadata
+              ?.updatedAt
           )
       );
 
@@ -795,779 +898,77 @@ export function createEncyclopediaController({
     }
 
     cards.sort(
-      (a, b) =>
-        collatorZh.compare(
-          getCategoryName(
-            a.category
-          ),
-          getCategoryName(
-            b.category
+      (a, b) => {
+        const categoryCompare =
+          zh.compare(
+            getCategoryName(
+              a.category
+            ),
+            getCategoryName(
+              b.category
+            )
+          );
+
+        if (
+          state.sort ===
+          "category" &&
+          categoryCompare !== 0
+        ) {
+          return categoryCompare;
+        }
+
+        return (
+          categoryCompare ||
+          zh.compare(
+            a.nameZh,
+            b.nameZh
           )
-        ) ||
-        collatorZh.compare(
-          a.nameZh,
-          b.nameZh
-        )
-    );
-  }
-
-  function renderCards(cards) {
-    const fragment =
-      document.createDocumentFragment();
-
-    cards.forEach(
-      (card) => {
-        fragment.append(
-          createCardElement(card)
         );
       }
     );
-
-    refs.results.replaceChildren(
-      fragment
-    );
-  }
-
-  function createCardElement(
-    card
-  ) {
-    const selection =
-      ensureCardSelection(card);
-
-    const colorway =
-      getSelectedColorway(
-        card,
-        selection
-      );
-
-    const article =
-      document.createElement(
-        "article"
-      );
-
-    article.className =
-      "ency-card";
-
-    article.dataset.cardId =
-      card.id;
-
-    article.style.setProperty(
-      "--ency-card-accent",
-      colorway?.palette?.[0]
-        ?.hex ||
-        "#C400FF"
-    );
-
-    article.innerHTML = `
-      <div class="ency-card-accent"></div>
-
-      <div class="ency-card-inner">
-
-        <header class="ency-card-header">
-
-          <div>
-            <div class="ency-card-category">
-              ${escapeHtml(
-                getCategoryName(
-                  card.category
-                )
-              )}
-            </div>
-
-            <h3>
-              ${escapeHtml(
-                card.nameZh
-              )}
-            </h3>
-
-            <p class="ency-card-en">
-              ${escapeHtml(
-                card.nameEn
-              )}
-            </p>
-          </div>
-
-          <div class="ency-card-header-actions">
-
-            <span class="ency-source-badge">
-              ${escapeHtml(
-                SOURCE_LABELS[
-                  card.source?.type
-                ] ||
-                card.source?.type ||
-                "未知來源"
-              )}
-            </span>
-
-            <button
-              class="ency-pudding-button"
-              type="button"
-              disabled
-              title="收藏將於 Step 06 啟用"
-            >
-              🍮
-            </button>
-
-          </div>
-
-        </header>
-
-        ${
-          card.descriptionZh
-            ? `
-              <p class="ency-card-description">
-                ${escapeHtml(
-                  card.descriptionZh
-                )}
-              </p>
-            `
-            : ""
-        }
-
-        <div class="ency-platforms">
-          ${card.platforms
-            .map(
-              (platform) => `
-                <span>
-                  ${escapeHtml(
-                    PLATFORM_LABELS[
-                      platform
-                    ] ||
-                    platform
-                  )}
-                </span>
-              `
-            )
-            .join("")}
-        </div>
-
-        ${createColorwayHtml(
-          card,
-          selection
-        )}
-
-        ${createAttributesHtml(
-          card,
-          selection
-        )}
-
-        <div class="ency-tags">
-          ${card.tags
-            .slice(0, 18)
-            .map(
-              (tag) => `
-                <span>
-                  ${escapeHtml(
-                    tag
-                  )}
-                </span>
-              `
-            )
-            .join("")}
-        </div>
-
-        <section class="ency-prompt-box">
-          <div class="ency-prompt-title">
-            <strong>
-              Prompt
-            </strong>
-
-            <button
-              type="button"
-              data-card-copy="positive"
-            >
-              複製
-            </button>
-          </div>
-
-          <p data-card-positive>
-            ${escapeHtml(
-              buildPositivePrompt(
-                card,
-                selection
-              )
-            )}
-          </p>
-        </section>
-
-        <section
-          class="ency-prompt-box
-                 ency-negative-box"
-        >
-          <div class="ency-prompt-title">
-            <strong>
-              Negative Prompt
-            </strong>
-
-            <button
-              type="button"
-              data-card-copy="negative"
-            >
-              複製
-            </button>
-          </div>
-
-          <p data-card-negative>
-            ${escapeHtml(
-              buildNegativePrompt(
-                card
-              )
-            )}
-          </p>
-        </section>
-
-        <footer class="ency-card-footer">
-          <small>
-            ID：
-            ${escapeHtml(
-              card.id
-            )}
-          </small>
-
-          <button
-            type="button"
-            disabled
-            title="Prompt Builder 於 Step 07 啟用"
-          >
-            ＋ 加入提示詞組合器
-          </button>
-        </footer>
-
-      </div>
-    `;
-
-    return article;
-  }
-
-  function createColorwayHtml(
-    card,
-    selection
-  ) {
-    if (
-      !Array.isArray(
-        card.colorways
-      ) ||
-      !card.colorways.length
-    ) {
-      return "";
-    }
-
-    const selected =
-      getSelectedColorway(
-        card,
-        selection
-      );
-
-    return `
-      <section class="ency-card-section">
-
-        <div class="ency-section-label">
-          命名配色
-        </div>
-
-        <select
-          data-card-colorway
-          data-card-id="${escapeHtml(
-            card.id
-          )}"
-        >
-          ${card.colorways
-            .map(
-              (colorway) => `
-                <option
-                  value="${escapeHtml(
-                    colorway.id
-                  )}"
-                  ${
-                    colorway.id ===
-                    selection.colorwayId
-                      ? "selected"
-                      : ""
-                  }
-                >
-                  ${escapeHtml(
-                    colorway.nameZh
-                  )}
-                  ${
-                    colorway.nameEn
-                      ? ` · ${escapeHtml(
-                          colorway.nameEn
-                        )}`
-                      : ""
-                  }
-                </option>
-              `
-            )
-            .join("")}
-        </select>
-
-        <div
-          class="ency-colorway-name"
-          data-card-colorway-name
-        >
-          ${escapeHtml(
-            selected?.nameZh ||
-            ""
-          )}
-        </div>
-
-        <div
-          class="ency-swatches"
-          data-card-swatches
-        >
-          ${createSwatchesHtml(
-            selected
-          )}
-        </div>
-
-      </section>
-    `;
-  }
-
-  function createAttributesHtml(
-    card,
-    selection
-  ) {
-    const available =
-      Object.entries(
-        ATTRIBUTE_LABELS
-      ).filter(
-        ([attributeId]) =>
-          Array.isArray(
-            card.attributes?.[
-              attributeId
-            ]
-          ) &&
-          card.attributes[
-            attributeId
-          ].length
-      );
-
-    if (!available.length) {
-      return "";
-    }
-
-    return `
-      <section class="ency-attribute-grid">
-
-        ${available
-          .map(
-            ([
-              attributeId,
-              label
-            ]) => {
-              const options =
-                card.attributes[
-                  attributeId
-                ];
-
-              const selected =
-                selection.attributes[
-                  attributeId
-                ];
-
-              return `
-                <label>
-                  <span>
-                    ${escapeHtml(
-                      label
-                    )}
-                  </span>
-
-                  <select
-                    data-card-attribute
-                    data-card-id="${escapeHtml(
-                      card.id
-                    )}"
-                    data-attribute-id="${escapeHtml(
-                      attributeId
-                    )}"
-                  >
-                    ${options
-                      .map(
-                        (
-                          option,
-                          index
-                        ) => `
-                          <option
-                            value="${escapeHtml(
-                              option.id
-                            )}"
-                            ${
-                              option.id ===
-                              selected ||
-                              (
-                                !selected &&
-                                index === 0
-                              )
-                                ? "selected"
-                                : ""
-                            }
-                          >
-                            ${escapeHtml(
-                              option.nameZh ||
-                              option.nameEn ||
-                              option.id
-                            )}
-                          </option>
-                        `
-                      )
-                      .join("")}
-                  </select>
-                </label>
-              `;
-            }
-          )
-          .join("")}
-
-      </section>
-    `;
-  }
-
-  function ensureCardSelection(
-    card
-  ) {
-    if (
-      !cardSelections.has(
-        card.id
-      )
-    ) {
-      const attributes = {};
-
-      Object.entries(
-        ATTRIBUTE_LABELS
-      ).forEach(
-        ([attributeId]) => {
-          attributes[
-            attributeId
-          ] =
-            card.attributes?.[
-              attributeId
-            ]?.[0]?.id ||
-            "";
-        }
-      );
-
-      cardSelections.set(
-        card.id,
-        {
-          colorwayId:
-            card.colorways?.[0]
-              ?.id ||
-            "",
-
-          attributes
-        }
-      );
-    }
-
-    return cardSelections.get(
-      card.id
-    );
-  }
-
-  function updateCardSelection(
-    select
-  ) {
-    const cardId =
-      select.dataset.cardId;
-
-    const card =
-      registry.getCard(
-        cardId
-      );
-
-    if (!card) {
-      return;
-    }
-
-    const selection =
-      ensureCardSelection(
-        card
-      );
-
-    if (
-      select.matches(
-        "[data-card-colorway]"
-      )
-    ) {
-      selection.colorwayId =
-        select.value;
-    }
-
-    if (
-      select.matches(
-        "[data-card-attribute]"
-      )
-    ) {
-      const attributeId =
-        select.dataset
-          .attributeId;
-
-      selection.attributes[
-        attributeId
-      ] =
-        select.value;
-    }
-
-    const cardElement =
-      select.closest(
-        ".ency-card"
-      );
-
-    if (!cardElement) {
-      return;
-    }
-
-    /*
-     * 這裡是 Step 03 最重要的一條：
-     * 不呼叫 render()。
-     */
-    updateSingleCard(
-      cardElement,
-      card,
-      selection
-    );
-  }
-
-  function updateSingleCard(
-    cardElement,
-    card,
-    selection
-  ) {
-    const colorway =
-      getSelectedColorway(
-        card,
-        selection
-      );
-
-    cardElement.style.setProperty(
-      "--ency-card-accent",
-      colorway?.palette?.[0]
-        ?.hex ||
-        "#C400FF"
-    );
-
-    const colorwayName =
-      cardElement.querySelector(
-        "[data-card-colorway-name]"
-      );
-
-    if (colorwayName) {
-      colorwayName.textContent =
-        colorway?.nameZh ||
-        "";
-    }
-
-    const swatches =
-      cardElement.querySelector(
-        "[data-card-swatches]"
-      );
-
-    if (swatches) {
-      swatches.innerHTML =
-        createSwatchesHtml(
-          colorway
-        );
-    }
-
-    const prompt =
-      cardElement.querySelector(
-        "[data-card-positive]"
-      );
-
-    if (prompt) {
-      prompt.textContent =
-        buildPositivePrompt(
-          card,
-          selection
-        );
-    }
-
-    cardElement.classList.add(
-      "is-variant-updated"
-    );
-
-    window.setTimeout(
-      () => {
-        cardElement.classList.remove(
-          "is-variant-updated"
-        );
-      },
-      320
-    );
-  }
-
-  function getSelectedColorway(
-    card,
-    selection
-  ) {
-    return (
-      card.colorways?.find(
-        (colorway) =>
-          colorway.id ===
-          selection.colorwayId
-      ) ||
-      card.colorways?.[0] ||
-      null
-    );
-  }
-
-  function buildPositivePrompt(
-    card,
-    selection
-  ) {
-    const fragments = [
-      ...(card.prompt?.positive || [])
-    ];
-
-    const colorway =
-      getSelectedColorway(
-        card,
-        selection
-      );
-
-    fragments.push(
-      ...(
-        colorway?.prompt ||
-        []
-      )
-    );
-
-    Object.entries(
-      selection.attributes
-    ).forEach(
-      ([
-        attributeId,
-        optionId
-      ]) => {
-        const option =
-          card.attributes?.[
-            attributeId
-          ]?.find(
-            (candidate) =>
-              candidate.id ===
-              optionId
-          );
-
-        if (option?.prompt) {
-          fragments.push(
-            option.prompt
-          );
-        }
-      }
-    );
-
-    return uniqueFragments(
-      fragments
-    ).join(", ");
-  }
-
-  function buildNegativePrompt(
-    card
-  ) {
-    return uniqueFragments(
-      card.prompt?.negative ||
-      []
-    ).join(", ");
-  }
-
-  async function copyCardContent(
-    button
-  ) {
-    const cardElement =
-      button.closest(
-        ".ency-card"
-      );
-
-    if (!cardElement) {
-      return;
-    }
-
-    const type =
-      button.dataset
-        .cardCopy;
-
-    const target =
-      type === "negative"
-        ? cardElement.querySelector(
-            "[data-card-negative]"
-          )
-        : cardElement.querySelector(
-            "[data-card-positive]"
-          );
-
-    const text =
-      target?.textContent
-        ?.trim() ||
-      "";
-
-    if (!text) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard
-        .writeText(text);
-
-      const original =
-        button.textContent;
-
-      button.textContent =
-        "已複製 ✓";
-
-      window.setTimeout(
-        () => {
-          button.textContent =
-            original;
-        },
-        900
-      );
-    } catch {
-      window.prompt(
-        "請手動複製：",
-        text
-      );
-    }
   }
 
   function renderCategoryChips() {
     if (
       !state.categories.size
     ) {
-      refs.categoryChips.innerHTML = `
-        <span class="ency-category-empty">
-          ${
-            state.showAllExplicit
-              ? "全部分類"
-              : "尚未選擇分類"
-          }
-        </span>
-      `;
+      refs.categoryChips
+        .innerHTML = `
+          <span class="ency-category-empty">
+            ${
+              state.showAllExplicit
+                ? "全部分類"
+                : "尚未選擇分類"
+            }
+          </span>
+        `;
 
       return;
     }
 
-    refs.categoryChips.innerHTML =
-      [...state.categories]
-        .map(
-          (categoryId) => `
-            <button
-              type="button"
-              data-ency-remove-category="${escapeHtml(
-                categoryId
-              )}"
-            >
-              ${escapeHtml(
-                getCategoryName(
+    refs.categoryChips
+      .innerHTML =
+        [
+          ...state.categories
+        ]
+          .map(
+            (categoryId) => `
+              <button
+                type="button"
+                data-ency-remove-category="${escapeHtml(
                   categoryId
-                )
-              )}
-              ×
-            </button>
-          `
-        )
-        .join("");
+                )}"
+              >
+                ${escapeHtml(
+                  getCategoryName(
+                    categoryId
+                  )
+                )}
+                ×
+              </button>
+            `
+          )
+          .join("");
   }
 
   function renderPagination(
@@ -1579,7 +980,8 @@ export function createEncyclopediaController({
       refs.pagination.hidden =
         true;
 
-      refs.pagination.replaceChildren();
+      refs.pagination
+        .replaceChildren();
 
       return;
     }
@@ -1588,7 +990,7 @@ export function createEncyclopediaController({
       false;
 
     const pages =
-      getPageNumbers(
+      createPageNumbers(
         state.page,
         totalPages
       );
@@ -1606,7 +1008,7 @@ export function createEncyclopediaController({
             : ""
         }
       >
-        ← 上一頁
+        ←
       </button>
 
       ${pages
@@ -1640,7 +1042,7 @@ export function createEncyclopediaController({
             : ""
         }
       >
-        下一頁 →
+        →
       </button>
     `;
   }
@@ -1649,38 +1051,38 @@ export function createEncyclopediaController({
     if (
       refs.query &&
       document.activeElement !==
-        refs.query
+      refs.query
     ) {
       refs.query.value =
         state.query;
     }
 
-    setSelectValue(
+    setSelect(
       refs.source,
       state.sourceType
     );
 
-    setSelectValue(
+    setSelect(
       refs.platform,
       state.platform
     );
 
-    setSelectValue(
+    setSelect(
       refs.material,
       state.material
     );
 
-    setSelectValue(
+    setSelect(
       refs.gender,
       state.gender
     );
 
-    setSelectValue(
+    setSelect(
       refs.sort,
       state.sort
     );
 
-    setSelectValue(
+    setSelect(
       refs.pageSize,
       String(
         state.pageSize
@@ -1688,30 +1090,25 @@ export function createEncyclopediaController({
     );
   }
 
-  function createEmptySummary() {
-    const counts =
-      registry.getCounts();
-
-    if (!counts.total) {
-      return (
-        "Registry 正常，目前尚未載入任何正式資料卡。"
-      );
-    }
-
-    return (
-      "沒有符合目前篩選條件的資料卡。"
-    );
-  }
-
   function getCategoryName(
     categoryId
   ) {
     return (
-      registry.getCategory(
-        categoryId
-      )?.nameZh ||
+      registry
+        .getCategory(
+          categoryId
+        )
+        ?.nameZh ||
       categoryId
     );
+  }
+
+  function createEmptySummary() {
+    return registry
+      .getCounts()
+      .total
+      ? "沒有符合目前條件的資料卡。"
+      : "Registry 正常，目前尚未載入正式資料卡。";
   }
 
   function createBaseHtml() {
@@ -1728,8 +1125,7 @@ export function createEncyclopediaController({
           </h3>
 
           <p>
-            初始狀態不顯示全部資料卡。
-            選擇分類或搜尋後才載入結果。
+            初始不顯示全部資料卡。
           </p>
         </div>
 
@@ -1765,8 +1161,8 @@ export function createEncyclopediaController({
           <input
             type="search"
             autocomplete="off"
-            placeholder="名稱、標籤、Prompt…"
             data-ency-filter-query
+            placeholder="名稱、標籤、Prompt…"
           >
         </label>
 
@@ -1948,7 +1344,6 @@ export function createEncyclopediaController({
         class="ency-pagination"
         data-ency-pagination
         hidden
-        aria-label="百科分頁"
       ></nav>
     `;
   }
@@ -1965,8 +1360,23 @@ export function createEncyclopediaController({
       render();
     },
 
-    isActivated() {
-      return state.activated;
+    getCardSelection(
+      cardId
+    ) {
+      return cardSystem
+        ?.getSelection(
+          cardId
+        ) ||
+        null;
+    },
+
+    openCardDetail(
+      cardId
+    ) {
+      cardSystem
+        ?.openDetail(
+          cardId
+        );
     }
   });
 }
@@ -1979,7 +1389,7 @@ function collectAttributeValues(
   cards,
   attributeId
 ) {
-  const map =
+  const values =
     new Map();
 
   cards.forEach(
@@ -1995,7 +1405,6 @@ function collectAttributeValues(
             String(
               option.nameZh ||
               option.nameEn ||
-              option.id ||
               ""
             ).trim();
 
@@ -2003,22 +1412,17 @@ function collectAttributeValues(
             return;
           }
 
-          const key =
-            label.toLowerCase();
-
-          if (!map.has(key)) {
-            map.set(
-              key,
-              label
-            );
-          }
+          values.set(
+            label.toLowerCase(),
+            label
+          );
         }
       );
     }
   );
 
   return [
-    ...map.values()
+    ...values.values()
   ].sort(
     (a, b) =>
       a.localeCompare(
@@ -2062,13 +1466,13 @@ function replaceFacetOptions(
       .join("")}
   `;
 
-  select.value =
-    values.includes(selected)
-      ? selected
-      : "all";
+  setSelect(
+    select,
+    selected
+  );
 }
 
-function setSelectValue(
+function setSelect(
   select,
   value
 ) {
@@ -2077,12 +1481,13 @@ function setSelectValue(
   }
 
   const exists =
-    [...select.options]
-      .some(
-        (option) =>
-          option.value ===
-          value
-      );
+    [
+      ...select.options
+    ].some(
+      (option) =>
+        option.value ===
+        value
+    );
 
   select.value =
     exists
@@ -2093,10 +1498,10 @@ function setSelectValue(
 function hasAttributeValue(
   card,
   attributeId,
-  expected
+  targetValue
 ) {
   const target =
-    String(expected)
+    String(targetValue)
       .trim()
       .toLowerCase();
 
@@ -2137,6 +1542,7 @@ function createSearchText(
     ...(card.tags || []),
 
     ...(card.prompt?.positive || []),
+
     ...(card.prompt?.negative || []),
 
     ...(card.colorways || [])
@@ -2145,6 +1551,7 @@ function createSearchText(
           colorway.nameZh,
           colorway.nameEn,
           ...(colorway.prompt || []),
+
           ...(colorway.palette || [])
             .flatMap(
               (color) => [
@@ -2155,9 +1562,11 @@ function createSearchText(
         ]
       ),
 
-    ...Object.values(
-      card.attributes || {}
-    )
+    ...Object
+      .values(
+        card.attributes ||
+        {}
+      )
       .flat()
       .flatMap(
         (option) => [
@@ -2173,71 +1582,7 @@ function createSearchText(
     .toLowerCase();
 }
 
-function createSwatchesHtml(
-  colorway
-) {
-  return (
-    colorway?.palette ||
-    []
-  )
-    .map(
-      (color) => `
-        <span
-          class="ency-swatch"
-          title="${escapeHtml(
-            color.nameZh ||
-            color.nameEn
-          )}"
-        >
-          <i
-            style="background:${safeHex(
-              color.hex
-            )}"
-          ></i>
-
-          <b>
-            ${escapeHtml(
-              color.nameZh ||
-              color.nameEn
-            )}
-          </b>
-        </span>
-      `
-    )
-    .join("");
-}
-
-function uniqueFragments(
-  values
-) {
-  const output = [];
-  const seen = new Set();
-
-  values
-    .map(
-      (value) =>
-        String(value || "")
-          .trim()
-    )
-    .filter(Boolean)
-    .forEach(
-      (value) => {
-        const key =
-          value.toLowerCase();
-
-        if (seen.has(key)) {
-          return;
-        }
-
-        seen.add(key);
-        output.push(value);
-      }
-    );
-
-  return output;
-}
-
-function getPageNumbers(
+function createPageNumbers(
   current,
   total
 ) {
@@ -2253,68 +1598,37 @@ function getPageNumbers(
       current + 2
     );
 
-  const pages = [];
+  const output = [];
 
   for (
     let page = start;
     page <= end;
     page += 1
   ) {
-    pages.push(page);
+    output.push(page);
   }
 
-  return pages;
+  return output;
 }
 
-function dateValue(
-  value
-) {
-  const timestamp =
+function dateValue(value) {
+  const result =
     new Date(
       value || 0
     ).getTime();
 
   return Number.isFinite(
-    timestamp
+    result
   )
-    ? timestamp
+    ? result
     : 0;
 }
 
-function safeHex(
-  value
-) {
-  const text =
-    String(value || "");
-
-  return /^#[0-9a-f]{6}$/i
-    .test(text)
-      ? text
-      : "#777777";
-}
-
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
