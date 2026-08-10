@@ -473,7 +473,6 @@ class DataRegistry {
         type: "source-cards-removed",
         sourceId,
         removed,
-
         removedIds
       });
     }
